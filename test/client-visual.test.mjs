@@ -158,6 +158,9 @@ class El {
 			return out;
 		}
 		const match = (el) => {
+			/* 通配符：生产代码用 `el.querySelectorAll("*")` 遍历子元素
+			   （控件豁免要把整棵子树都标上）。夹具早期不支持，会静默返回空。 */
+			if (selector === "*") return true;
 			if (selector.startsWith("style[")) return el.tagName === "STYLE" && el.dataset.pluginCss !== void 0;
 			const attr = /^\[data-([a-z0-9-]+)(?:=([a-z]+))?\]$/i.exec(selector);
 			if (attr !== null) {
@@ -838,21 +841,26 @@ test("样式表：面板内的无差别中和规则仍须排除插件自身控�
 		   它们靠背景色显形，又被 blanket 一刀切成透明。控件必须豁免。
 		   这条断言就是为了防止规则被改回"一刀切"。 */
 		assert.ok(
-			sel.includes(":not([data-wbg2-keepbg])"),
-			`无差别中和规则必须豁免靠背景显形的控件（否则官方开关会消失）：${sel.slice(0, 160)}`
+			sel.includes(":not([data-wbg2-keepbg])") && sel.includes(":not([data-wbg2-keepbgdescendants])"),
+			`无差别中和规则必须豁免靠背景显形的控件及其内部零件（否则官方开关会消失/只剩轮廓）：${sel.slice(0, 200)}`
 		);
 	}
 });
 
-test("控件豁免：blanket 生效时给官方控件打 keepbg 标记", () => {
+test("控件豁免：blanket 生效时给官方控件**及其内部零件**打豁免标记", () => {
 	const { main } = buildApp();
-	/* 造一个"官方开关"：button + role=switch，带背景色 */
+	/* 造一个"官方开关"：button + role=switch，内部有一个圆形滑块（子元素）。
+	   真机第二次事故就是漏了这层：开关只剩很淡的轮廓、圆钮不见。 */
 	const sw = document.createElement("button");
 	sw.setAttribute("role", "switch");
 	sw.className = "officialSwitch";
+	const knob = document.createElement("span");
+	knob.className = "officialKnob";
+	sw.appendChild(knob);
 	main.appendChild(sw);
 	api.apply(makeCtx({ ...I.DEFAULTS }));
 	assert.equal(sw.getAttribute("data-wbg2-keepbg"), "1", "官方开关必须被标记为保留背景");
+	assert.equal(knob.getAttribute("data-wbg2-keepbgdescendants"), "1", "开关内部的圆钮也必须被豁免");
 	/* 插件自己的控件不该被标记（它本来就被 :not([class*=wbg2]) 排除） */
 	const own = document.createElement("button");
 	own.className = "wbg2-switch";
