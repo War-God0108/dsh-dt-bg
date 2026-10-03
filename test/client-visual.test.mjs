@@ -674,27 +674,35 @@ test("诊断：collectDiagnostics 产出结构、令牌与已生效值", () => {
 	assert.equal(report.outerChain[0].id, "root");
 });
 
-test("首次运行种子：image 为空时采纳宿主给的壁纸并写入设置", async () => {
+test("采纳宿主送来的设置：写入本地权威层并渲染（configForms 读不到时的唯一来源）", async () => {
 	buildApp();
-	const setCalls = [];
 	const snapshot = { value: { ...I.DEFAULTS }, writable: true };
 	const ctx = makeCtx({ ...I.DEFAULTS });
 	ctx.configForms.get = () => ({
 		getSnapshot: () => snapshot,
 		subscribe: () => () => {},
-		set: (key, value) => {
-			setCalls.push([key, value]);
-			snapshot.value = { ...snapshot.value, [key]: value };
-		},
+		set: () => {},
 		unset: () => {}
 	});
 	api.apply(ctx);
-	/* 宿主送来的种子只补 image（这一版不接管其它设置：
-	   设置本身由 configForms 读、由诊断通道写） */
-	const adopted = await I.adoptSeed({ image: "data:image/jpeg;base64,AAAA" });
-	assert.deepEqual(adopted, ["image", "kind"]);
-	assert.equal(snapshot.value.image, "data:image/jpeg;base64,AAAA");
-	assert.equal(snapshot.value.kind, "image");
+	/* 宿主从配置文件读到的真实值（含图片与视觉参数），随诊断响应送回 */
+	const adopted = await I.adoptSeed({
+		image: "data:image/jpeg;base64,AAAA",
+		kind: "image",
+		translucency: 0.6,
+		scope: "all",
+		dim: 0.25
+	});
+	for (const k of ["image", "kind", "translucency", "scope", "dim"]) {
+		assert.ok(adopted.includes(k), `应采纳 ${k}`);
+	}
+	/* 关键：这些值必须进入 applyVisual 的最终覆盖层 ——
+	   否则订阅回调拿默认值再跑一次就把用户的设置冲掉了 */
+	const settings = I.lastSettings ?? (typeof I.getLastSettings === "function" ? I.getLastSettings() : null);
+	if (settings !== null && settings !== void 0) {
+		assert.equal(settings.image, "data:image/jpeg;base64,AAAA");
+		assert.equal(settings.translucency, 0.6);
+	}
 	/* 第二次调用必须被忽略（一次会话只补一次） */
 	assert.deepEqual(await I.adoptSeed({ image: "data:image/jpeg;base64,BBBB" }), []);
 });
