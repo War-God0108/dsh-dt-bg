@@ -1,4 +1,4 @@
-# dsh-dt-bg deployment + runtime verification.
+# dsh-web-bg-2 deployment + runtime verification.
 #
 # ASCII-only on purpose: Windows PowerShell 5.1 reads .ps1 files as ANSI, so a
 # UTF-8 file without BOM (with non-ASCII comments) fails to parse. Chinese docs
@@ -28,11 +28,11 @@ function Warn([string]$m) { $script:warn += 1; Write-Host "  [WARN] $m" -Foregro
 function Info([string]$m) { Write-Host "  [info] $m" -ForegroundColor DarkGray }
 
 if (-not $DshHome) { $DshHome = if ($env:DSH_HOME) { $env:DSH_HOME } else { Join-Path $env:USERPROFILE ".dsh" } }
-Write-Host "== dsh-dt-bg verification ==" -ForegroundColor Cyan
+Write-Host "== dsh-web-bg-2 verification ==" -ForegroundColor Cyan
 Info "DSH_HOME = $DshHome"
 
 # -- 1) static deployment ----------------------------------------------------
-$pkgDir = Join-Path $DshHome "profiles\node_modules\dsh-dt-bg"
+$pkgDir = Join-Path $DshHome "profiles\node_modules\dsh-web-bg-2"
 if (Test-Path $pkgDir) {
     Pass "plugin package deployed: $pkgDir"
     foreach ($rel in @("package.json", "lib\index.js", "lib\client.js")) {
@@ -49,7 +49,7 @@ $patch = Join-Path $DshHome "profiles\$profileName\cordis.patch.yml"
 if (Test-Path $patch) {
     $text = Get-Content -LiteralPath $patch -Raw -Encoding UTF8
     # 名字可能带引号也可能不带（YAML 序列化会去掉引号），两种写法都要认
-    if ($text -match "(?m)^\s*name:\s*['""]?dsh-dt-bg['""]?\s*$") { Pass "mounted in $profileName profile (cordis.patch.yml)" } else { Fail "not mounted in $patch - add the insert entry (node install.mjs)" }
+    if ($text -match "(?m)^\s*name:\s*['""]?dsh-web-bg-2['""]?\s*$") { Pass "mounted in $profileName profile (cordis.patch.yml)" } else { Fail "not mounted in $patch - add the insert entry (node install.mjs)" }
     # 注释掉的行不算挂载（行首允许空白但不能是 #）
     if ($text -match "(?m)^\s*name:\s*['""]?dsh-web-bg['""]?\s*$") { Warn "v1 (dsh-web-bg) is also mounted - two wallpaper layers stack; remove one" } else { Pass "v1 (dsh-web-bg) is not mounted (no stacked wallpaper layers)" }
 } else { Fail "profile patch not found: $patch" }

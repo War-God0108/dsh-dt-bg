@@ -33,11 +33,11 @@ function extractCss(src) {
 			raw
 				.replace(/\\"/g, '"')
 				.replace(/\\n/g, "\n")
-				.replace(/\$\{LAYER_ID\}/g, "dsh-dt-bg-layer")
-				.replace(/\$\{VEIL_ID\}/g, "dsh-dt-bg-veil")
-				.replace(/\$\{CHROME_ID\}/g, "dsh-dt-bg-chrome")
+				.replace(/\$\{LAYER_ID\}/g, "dsh-web-bg-2-layer")
+				.replace(/\$\{VEIL_ID\}/g, "dsh-web-bg-2-veil")
+				.replace(/\$\{CHROME_ID\}/g, "dsh-web-bg-2-chrome")
 				.replace(/\$\{MARK\}/g, "wbg2")
-				.replace(/\$\{STYLE_ID\}/g, "dsh-dt-bg")
+				.replace(/\$\{STYLE_ID\}/g, "dsh-web-bg-2")
 				.replace(/\$\{[A-Za-z_$][^}]*\}/g, "x")
 		);
 	}

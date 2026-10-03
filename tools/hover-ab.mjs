@@ -9,10 +9,9 @@
  *   node tools/hover-ab.mjs reset  # 恢复默认（两个都启用）
  */
 import { execFileSync } from "node:child_process";
-import { DSH_HOME, homedir, resolveDshModules } from "./paths.mjs";
 
-const YAML = join(resolveDshModules(), "..", "yaml");
-const CONFIG = join(DSH_HOME, "profiles", "desktop", "cordis.patch.yml");
+const YAML = "C:/Users/31259/AppData/Local/npm-cache/_npx/1e7f6d9597241db0/node_modules/yaml";
+const CONFIG = "C:/Users/31259/.dsh/profiles/desktop/cordis.patch.yml";
 
 /** @type {Record<string, {noFadeNeutralize: boolean, noTint: boolean, label: string}>} */
 const MODES = {

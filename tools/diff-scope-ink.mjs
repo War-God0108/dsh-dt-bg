@@ -6,13 +6,12 @@
  */
 import { execFileSync } from "node:child_process";
 import { closeSync, openSync, readSync, statSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
-import { CONFIG_FILE, DIAG_FILE, resolveDshModules } from "./paths.mjs";
 
-/** npx 缓存里 yaml 包的位置（目录名是随机哈希，运行时解析）。 */
-const YAML = join(resolveDshModules(), "..", "yaml");
-const CONFIG = CONFIG_FILE;
-const DIAG = DIAG_FILE;
+const YAML = "C:/Users/31259/AppData/Local/npm-cache/_npx/1e7f6d9597241db0/node_modules/yaml";
+const CONFIG = "C:/Users/31259/.dsh/profiles/desktop/cordis.patch.yml";
+const DIAG = join(homedir(), ".dsh", ".dsh-web-bg2-diagnostics.jsonl");
 const node = process.execPath;
 
 function setScope(scope) {

@@ -7,9 +7,8 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { resolveDshModules } from "./paths.mjs";
 
-const base = resolveDshModules();
+const base = join(homedir(), "AppData", "Local", "npm-cache", "_npx", "1e7f6d9597241db0", "node_modules", "@deepseek-ai");
 
 /** 找出插件管理相关的包。 */
 const pkgs = readdirSync(base).filter((p) => p.startsWith("dsh") && /plugin|manager|market|registry/i.test(p));

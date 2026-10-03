@@ -1,4 +1,4 @@
-# dsh-dt-bg 安装指南（给使用者）
+# dsh-web-bg-2 安装指南（给使用者）
 
 给 DSH 界面换上图片壁纸或纯色背景，并让**侧边栏、内容区、输入框一起透出壁纸**。
 
@@ -6,44 +6,37 @@
 
 ---
 
-## 一、在 DSH 界面里安装（推荐）
+## 一、最省事：在 DSH 界面里安装（推荐）
 
-DSH 自带的插件管理器支持 **git 仓库 / `.tgz` 安装包 / npm 包名 / 本地目录** 四种来源。
-下面按"最省事"排序，**任选一种**即可。
+DSH 自带的插件管理器支持从 **npm 包名 / `.tgz` 安装包 / git 仓库 / 本地目录** 安装。
 
-### 方式 1：填 git 地址（最省事，不用下载文件）
+### 情况 A：已经拿到 `.tgz` 文件
 
-打开 DSH →「设置」→「内置插件」→ 在安装输入框里填：
-
-```
-https://github.com/War-God0108/dsh-dt-bg.git
-```
-
-然后**重启 DSH**。
-
-### 方式 2：下载 `.tgz`（网络不稳定时更可靠）
-
-1. 从 [Releases 页面](https://github.com/War-God0108/dsh-dt-bg/releases/latest) 下载
-   `dsh-dt-bg-2.0.0.tgz`
-2. 把它放到任意目录，例如 `D:\dsh-plugins\`
-3. 在同一个安装输入框里填该文件的**绝对路径**：
+1. 把 `dsh-web-bg-2-2.0.0.tgz` 放到任意目录，例如 `D:\dsh-plugins\`
+2. 打开 DSH →「设置」→「内置插件」→ 找到安装/添加插件的输入框
+3. 填入该文件的**绝对路径**（注意是绝对路径）：
 
    ```
-   D:\dsh-plugins\dsh-dt-bg-2.0.0.tgz
+   D:\dsh-plugins\dsh-web-bg-2-2.0.0.tgz
    ```
 
 4. 确认安装，然后**重启 DSH**
 
-> 两种方式都会**自动挂载** —— 插件包自带 `dsh.bundle.patch`，不需要手工改任何配置。
+> 插件包自带 `dsh.bundle.patch`，安装完成后会被**自动挂载**，不需要手工改任何配置。
 
-### 方式 3：npm 包名（暂未发布）
+### 情况 B：插件已发布到 npm
+
+在同一个输入框里直接填包名：
 
 ```
-dsh-dt-bg
+dsh-web-bg-2
 ```
 
-> 这个包名已经预留但**尚未发布到 npm**（作者的网络环境被 npm 官网风控拦截，无法注册账号）。
-> 等发布后这一条即可用；在那之前请用方式 1 或方式 2。
+### 情况 C：从 git 仓库安装
+
+```
+https://github.com/<作者>/dsh-web-bg-2.git
+```
 
 ---
 
@@ -68,7 +61,7 @@ node install.mjs --uninstall
 
 脚本做两件事（幂等，重复执行安全）：
 
-1. 把插件部署到 `$DSH_HOME/profiles/node_modules/dsh-dt-bg`
+1. 把插件部署到 `$DSH_HOME/profiles/node_modules/dsh-web-bg-2`
 2. 在 `$DSH_HOME/profiles/<profile>/cordis.patch.yml` 里写入挂载条目（已存在则跳过，并自动备份原配置）
 
 装完**重启 DSH** 生效。
@@ -119,14 +112,14 @@ node install.mjs --uninstall
 ```
 
 然后重启 DSH。若要连插件文件一起删干净，删掉
-`$DSH_HOME/profiles/node_modules/dsh-dt-bg` 目录即可。
+`$DSH_HOME/profiles/node_modules/dsh-web-bg-2` 目录即可。
 
 ---
 
 ## 六、给打包者：如何生成分发包
 
 ```bash
-node tools/build-dist.mjs          # 生成 dist/dsh-dt-bg-<version>.tgz
+node tools/build-dist.mjs          # 生成 dist/dsh-web-bg-2-<version>.tgz
 node tools/verify-dist.mjs         # 在隔离沙箱里验证：安装 → 幂等 → 卸载
 ```
 

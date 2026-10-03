@@ -9,9 +9,8 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { resolveDshModules } from "./paths.mjs";
 
-const base = resolveDshModules();
+const base = join(homedir(), "AppData", "Local", "npm-cache", "_npx", "1e7f6d9597241db0", "node_modules", "@deepseek-ai");
 const text = readFileSync(join(base, "dsh-plugin-manager", "lib", "index.js"), "utf8");
 
 function show(label, needle, before = 240, after = 420, max = 3) {

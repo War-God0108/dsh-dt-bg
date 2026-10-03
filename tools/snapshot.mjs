@@ -25,7 +25,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(here, "..");
 const SNAP_DIR = join(ROOT, "snapshots");
 const PROFILE = join(homedir(), ".dsh", "profiles", "desktop", "cordis.patch.yml");
-const DEPLOYED = join(homedir(), ".dsh", "profiles", "node_modules", "dsh-dt-bg", "lib", "client.js");
+const DEPLOYED = join(homedir(), ".dsh", "profiles", "node_modules", "dsh-web-bg-2", "lib", "client.js");
 
 /** 需要纳入快照的文件（相对插件根目录）。 */
 const FILES = ["lib/client.js", "lib/index.js", "install.mjs", "verify.ps1", "package.json"];

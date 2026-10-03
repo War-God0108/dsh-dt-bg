@@ -143,24 +143,7 @@ class El {
 	}
 	querySelectorAll(selector) {
 		const out = [];
-		/* 逗号分隔的选择器组：生产代码用它一次查出所有交互控件
-		   （`button,[role="button"],[role="switch"],input,…`）。
-		   夹具早期不支持，导致"控件豁免"这类用例静默查不到东西。 */
-		if (selector.includes(",")) {
-			const seen = new Set();
-			for (const part of selector.split(",")) {
-				for (const el of this.querySelectorAll(part.trim())) {
-					if (seen.has(el)) continue;
-					seen.add(el);
-					out.push(el);
-				}
-			}
-			return out;
-		}
 		const match = (el) => {
-			/* 通配符：生产代码用 `el.querySelectorAll("*")` 遍历子元素
-			   （控件豁免要把整棵子树都标上）。夹具早期不支持，会静默返回空。 */
-			if (selector === "*") return true;
 			if (selector.startsWith("style[")) return el.tagName === "STYLE" && el.dataset.pluginCss !== void 0;
 			const attr = /^\[data-([a-z0-9-]+)(?:=([a-z]+))?\]$/i.exec(selector);
 			if (attr !== null) {
@@ -357,9 +340,7 @@ globalThis.window.__ModuleLoader__ = {
 /* eslint-disable-next-line no-eval */
 (0, eval)(SOURCE);
 assert.ok(loaded !== null, "bundle 必须调用 __ModuleLoader__.load");
-/* 模块 id 用包名：从 package.json 读，避免改包名后测试误判（踩过一次）。 */
-const PKG_NAME = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).name;
-assert.equal(loaded.id, PKG_NAME);
+assert.equal(loaded.id, "dsh-web-bg-2");
 const api = loaded.factory((name) => {
 	if (name === "react") return react;
 	throw new Error(`未预期的 require("${name}")`);
@@ -430,7 +411,7 @@ const cases = [];
 const test = (name, fn) => cases.push([name, fn]);
 
 test("模块契约：id、inject、apply 与 __internals", () => {
-	assert.equal(loaded.id, JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).name);
+	assert.equal(loaded.id, "dsh-web-bg-2");
 	assert.equal(typeof I.applyVisual, "function");
 	assert.equal(typeof I.classifyFrameChildren, "function");
 	assert.equal(typeof I.collectDiagnostics, "function");
@@ -706,13 +687,10 @@ test("首次运行种子：image 为空时采纳宿主给的壁纸并写入设�
 		unset: () => {}
 	});
 	api.apply(ctx);
-	/* 这一版的种子只补 image ——
-	   历史上的"整份设置接管"（committedSettings + 各种豁免）已经把官方
-	   「新会话」的底色与跟随鼠标的悬停动画改坏，被整体撤掉了。 */
 	const adopted = await I.adoptSeed({ image: "data:image/jpeg;base64,AAAA" });
 	assert.deepEqual(adopted, ["image", "kind"]);
-	assert.equal(snapshot.value.image, "data:image/jpeg;base64,AAAA");
-	assert.equal(snapshot.value.kind, "image");
+	assert.deepEqual(setCalls.map((c) => c[0]), ["image", "kind"]);
+	assert.equal(setCalls[0][1], "data:image/jpeg;base64,AAAA");
 	/* 第二次调用必须被忽略（一次会话只补一次） */
 	assert.deepEqual(await I.adoptSeed({ image: "data:image/jpeg;base64,BBBB" }), []);
 });
@@ -830,13 +808,6 @@ test("样式表：面板内的无差别中和规则仍须排除插件自身控�
 			sel.includes(":not([class*=wbg2])"),
 			`无差别中和规则必须排除插件控件：${sel.slice(0, 120)}`
 		);
-		/* 注：曾给这条规则加过"控件豁免"（`:not([data-wbg2-keepbg])`），
-		   用于修"启用插件后官方开关/按钮消失"。但那批改动同时把官方
-		   「新会话」的底色与跟随鼠标的悬停动画改坏了，已**整体撤销**，
-		   回到了用户确认外观正常的那一版。
-		   代价是"开关可能又看不见" —— 如果真机复现，正确做法是**重做一份
-		   精确的豁免**（只针对控件子树），而不是恢复当时那版。
-		   这里不断言豁免存在，只记录该权衡。 */
 	}
 });
 
@@ -864,7 +835,6 @@ for (const [name, fn] of cases) {
 	}
 }
 console.log(`\n${pass}/${cases.length} 项断言通过`);
-
 
 
 

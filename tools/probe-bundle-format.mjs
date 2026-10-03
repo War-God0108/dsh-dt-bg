@@ -5,9 +5,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { resolveDshModules } from "./paths.mjs";
 
-const base = resolveDshModules();
+const base = join(homedir(), "AppData", "Local", "npm-cache", "_npx", "1e7f6d9597241db0", "node_modules", "@deepseek-ai");
 
 /** 在 @deepseek-ai 下找带 dsh.bundle 的包。 */
 const found = [];

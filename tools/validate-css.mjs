@@ -24,8 +24,8 @@ while ((m = re.exec(text)) !== null) {
 	const css = raw
 		.replace(/\\"/g, '"')
 		.replace(/\\n/g, "\n")
-		.replace(/\$\{LAYER_ID\}/g, "dsh-dt-bg-layer")
-		.replace(/\$\{VEIL_ID\}/g, "dsh-dt-bg-veil")
+		.replace(/\$\{LAYER_ID\}/g, "dsh-web-bg-2-layer")
+		.replace(/\$\{VEIL_ID\}/g, "dsh-web-bg-2-veil")
 		.replace(/\$\{MARK\}/g, "wbg2")
 		.replace(/\$\{[A-Z_]+[^}]*\}/g, "x");
 	if (!css.includes("{")) continue;
