@@ -9,7 +9,7 @@ import { ROOT } from "./paths.mjs";
 
 const FILES = [
 	["源码", join(ROOT, "lib", "client.js")],
-	["部署副本", join(homedir(), ".dsh", "profiles", "node_modules", "dsh-web-bg-2", "lib", "client.js")]
+	["部署副本", join(homedir(), ".dsh", "profiles", "node_modules", "dsh-dt-bg", "lib", "client.js")]
 ];
 
 const FEATURES = [

@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(here, "..");
-const tgz = process.argv[2] ?? join(ROOT, "dist", "dsh-web-bg-2-2.0.0.tgz");
+const tgz = process.argv[2] ?? join(ROOT, "dist", "dsh-dt-bg-2.0.0.tgz");
 if (!existsSync(tgz)) {
 	console.error(`找不到 tarball：${tgz}（先跑 node tools/build-dist.mjs）`);
 	process.exit(1);
@@ -31,7 +31,7 @@ console.log(`沙箱 DSH_HOME：${sandbox}`);
 console.log(`tarball：${tgz}\n`);
 
 /* 1) 解包（模拟 pnpm 解 tarball 的结果） */
-const extractDir = join(sandbox, "profiles", "node_modules", "dsh-web-bg-2");
+const extractDir = join(sandbox, "profiles", "node_modules", "dsh-dt-bg");
 const stageDir = join(sandbox, "_stage-unpack");
 mkdirSync(extractDir, { recursive: true });
 try {
@@ -56,7 +56,7 @@ if (typeof patchRel !== "string" || !existsSync(join(stageDir, patchRel))) {
 	process.exit(1);
 }
 const patchText = readFileSync(join(stageDir, patchRel), "utf8");
-const ok = /-\s*insert:/.test(patchText) && /id:\s*web-bg-2/.test(patchText) && /name:\s*dsh-web-bg-2/.test(patchText);
+const ok = /-\s*insert:/.test(patchText) && /id:\s*web-bg-2/.test(patchText) && /name:\s*dsh-dt-bg/.test(patchText);
 console.log(`   补丁内容自检：${ok ? "含 insert + id + name ✓" : "不完整 ✗"}`);
 
 /* 3) 用包内的 install.mjs 走"本地安装"路径，验证挂载写入 */

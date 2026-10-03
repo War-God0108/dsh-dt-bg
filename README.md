@@ -1,4 +1,4 @@
-# dsh-web-bg-2 — DSH 背景替换插件（第二版，面向官方桌面端）
+# dsh-dt-bg — DSH 背景替换插件（第二版，面向官方桌面端）
 
 给 DSH Web 界面（`dsh web`、以及官方 Windows 桌面端 `DeepSeek Harness.exe`）替换背景：
 图片壁纸 / 纯色 + 壁纸浓度、压暗、模糊，**并且让侧边栏、标题栏、composer 一起透出壁纸**。
@@ -126,15 +126,15 @@ v1 的做法是「把不透明的背景层挂进布局根内部，用负 z-index
 ## 三、安装
 
 > 给使用者看的完整说明在 **[INSTALL.md](INSTALL.md)**（三种安装方式 + 常见问题）。
-> 一句话版本：从 [Releases](https://github.com/War-God0108/dsh-web-bg-2/releases/latest)
+> 一句话版本：从 [Releases](https://github.com/War-God0108/dsh-dt-bg/releases/latest)
 > 下载 `.tgz` → DSH 里「设置 → 内置插件」填它的**绝对路径** → 重启 DSH。
 > 包自带 `dsh.bundle.patch`，装完**自动挂载**，不需要手工改配置。
 
 克隆仓库后也可以直接跑安装脚本：
 
 ```bash
-git clone https://github.com/War-God0108/dsh-web-bg-2.git
-cd dsh-web-bg-2
+git clone https://github.com/War-God0108/dsh-dt-bg.git
+cd dsh-dt-bg
 ```
 
 ```bat
@@ -144,9 +144,9 @@ node install.mjs --dry-run       :: 只报告将要做什么
 node install.mjs --uninstall     :: 移除挂载项并删除插件包
 ```
 
-脚本做两件事：把 `lib/` 与 `package.json` 拷到 `<DSH_HOME>/profiles/node_modules/dsh-web-bg-2`
+脚本做两件事：把 `lib/` 与 `package.json` 拷到 `<DSH_HOME>/profiles/node_modules/dsh-dt-bg`
 （先删后拷），并在目标 profile 的 `cordis.patch.yml` 追加一条
-`- insert: - id: web-bg-2 / name: 'dsh-web-bg-2'`（已挂则跳过，原文件先备份为 `.bak-dsh-web-bg-2`）。
+`- insert: - id: web-bg-2 / name: 'dsh-dt-bg'`（已挂则跳过，原文件先备份为 `.bak-dsh-dt-bg`）。
 
 **重启**：新增客户端插件只在 DSH 启动时进入客户端模块表——
 
@@ -462,7 +462,7 @@ style.setProperty(`--dsh-bg-${key}`, factor === 0 ? base : withAlpha(base, alpha
 
 ### `install.mjs` 的幂等判定（曾经写坏过）
 
-早期用 `text.includes("name: 'dsh-web-bg-2'")` 判断「是否已挂载」——**配置条目** `- id: web-bg-2`
+早期用 `text.includes("name: 'dsh-dt-bg'")` 判断「是否已挂载」——**配置条目** `- id: web-bg-2`
 那段里也有同样文本，判定与写入不一致，真机被重复追加成三份。现在按行扫描
 `- insert:` → `- id: web-bg-2` → `name:`（引号可有可无）三行连续的形状；连跑四次都正确跳过。
 

@@ -72,7 +72,7 @@ const REPLACEMENTS = [
 		symbol: "CONFIG_FILE"
 	},
 	{
-		re: /"C:\/Users\/[^"]*\/\.dsh\/profiles\/node_modules\/dsh-web-bg-2\/lib\/client\.js"/g,
+		re: /"C:\/Users\/[^"]*\/\.dsh\/profiles\/node_modules\/dsh-dt-bg\/lib\/client\.js"/g,
 		to: "join(DEPLOYED_DIR, \"lib\", \"client.js\")",
 		symbol: "DEPLOYED_DIR"
 	},
@@ -83,22 +83,22 @@ const REPLACEMENTS = [
 	},
 	// 工作区绝对路径
 	{
-		re: /"E:\/Agent projects\/Deepseek Harness\/dsh-web-bg-2\/lib\/client\.js"/g,
+		re: /"E:\/Agent projects\/Deepseek Harness\/dsh-dt-bg\/lib\/client\.js"/g,
 		to: "join(ROOT, \"lib\", \"client.js\")",
 		symbol: "ROOT"
 	},
 	{
-		re: /"E:\/Agent projects\/Deepseek Harness\/dsh-web-bg-2\/test\/screenshots(\/[^"]*)?"/g,
+		re: /"E:\/Agent projects\/Deepseek Harness\/dsh-dt-bg\/test\/screenshots(\/[^"]*)?"/g,
 		to: "join(ROOT, \"test\", \"screenshots\")",
 		symbol: "ROOT"
 	},
 	{
-		re: /"E:\/Agent projects\/Deepseek Harness\/dsh-web-bg-2\/dist(\/[^"]*)?"/g,
+		re: /"E:\/Agent projects\/Deepseek Harness\/dsh-dt-bg\/dist(\/[^"]*)?"/g,
 		to: "join(ROOT, \"dist\")",
 		symbol: "ROOT"
 	},
 	{
-		re: /"E:\/Agent projects\/Deepseek Harness\/dsh-web-bg-2([^"]*)"/g,
+		re: /"E:\/Agent projects\/Deepseek Harness\/dsh-dt-bg([^"]*)"/g,
 		to: (_m, rest) => {
 			const parts = String(rest).split("/").filter((s) => s !== "");
 			return `join(ROOT${parts.map((p) => `, ${JSON.stringify(p)}`).join("")})`;

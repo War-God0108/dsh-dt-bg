@@ -6,7 +6,7 @@
  * 其中 tarball 最省事：对方不需要 npm 账号，也不需要这个仓库的源码。
  *
  * 用法：
- *   node tools/build-dist.mjs            # 生成 dist/dsh-web-bg-2-<version>.tgz
+ *   node tools/build-dist.mjs            # 生成 dist/dsh-dt-bg-<version>.tgz
  *   node tools/build-dist.mjs --install  # 顺便验证：从 tarball 装进一个临时 profile 前缀
  */
 import { execFileSync } from "node:child_process";

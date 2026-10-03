@@ -1,8 +1,8 @@
 /**
- * dsh-web-bg-2 安装脚本（幂等）。
+ * dsh-dt-bg 安装脚本（幂等）。
  *
  * 做两件事：
- *   1. 把插件包部署到 `<DSH_HOME>/profiles/node_modules/dsh-web-bg-2`
+ *   1. 把插件包部署到 `<DSH_HOME>/profiles/node_modules/dsh-dt-bg`
  *      （先删后拷，避免旧文件残留）；
  *   2. 在目标 profile 的 `cordis.patch.yml` 里挂上 `web-bg-2` 条目（已挂则跳过）。
  *
@@ -18,7 +18,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SELF_DIR = dirname(fileURLToPath(import.meta.url));
-const PLUGIN_NAME = "dsh-web-bg-2";
+const PLUGIN_NAME = "dsh-dt-bg";
 const ENTRY_ID = "web-bg-2";
 
 const argv = process.argv.slice(2);
@@ -36,9 +36,9 @@ const patchFile = join(profilesDir, profileName, "cordis.patch.yml");
 const dryRun = flag("--dry-run");
 const uninstall = flag("--uninstall");
 
-const log = (message) => console.log(`dsh-web-bg-2: ${message}`);
+const log = (message) => console.log(`dsh-dt-bg: ${message}`);
 const fail = (message) => {
-	console.error(`dsh-web-bg-2: ${message}`);
+	console.error(`dsh-dt-bg: ${message}`);
 	process.exitCode = 1;
 };
 
@@ -94,10 +94,10 @@ function removePackage() {
 /**
  * 是否已经有我们写的 insert 挂载块。
  *
- * 不能用 `text.includes("name: 'dsh-web-bg-2'")` 判断——配置条目（`- id: web-bg-2`
+ * 不能用 `text.includes("name: 'dsh-dt-bg'")` 判断——配置条目（`- id: web-bg-2`
  * 那段）里也会出现同样的文本，早期就是这么误判并**重复追加**的（真机被追加成三份）。
  *
- * 这里按行扫描 `- insert:` → `- id: web-bg-2` → `name: …dsh-web-bg-2…` 三行连续的形状；
+ * 这里按行扫描 `- insert:` → `- id: web-bg-2` → `name: …dsh-dt-bg…` 三行连续的形状；
  * 注释行可有可无（YAML 序列化可能去掉引号，也可能没有注释行）。
  */
 function hasMountBlock(text) {
@@ -105,7 +105,7 @@ function hasMountBlock(text) {
 	for (let i = 0; i < lines.length - 2; i++) {
 		if (!lines[i].trimStart().startsWith("- insert:")) continue;
 		if (!lines[i + 1].includes(`- id: ${ENTRY_ID}`)) continue;
-		if (!/^\s*name:\s*['"]?dsh-web-bg-2['"]?\s*$/.test(lines[i + 2])) continue;
+		if (!/^\s*name:\s*['"]?dsh-dt-bg['"]?\s*$/.test(lines[i + 2])) continue;
 		return true;
 	}
 	return false;

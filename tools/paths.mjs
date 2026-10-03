@@ -26,7 +26,7 @@ export const CONFIG_FILE = join(DSH_HOME, "profiles", PROFILE, "cordis.patch.yml
 export const DIAG_FILE = join(DSH_HOME, ".dsh-web-bg2-diagnostics.jsonl");
 
 /** 插件在 profile 里的部署位置。 */
-export const DEPLOYED_DIR = join(DSH_HOME, "profiles", "node_modules", "dsh-web-bg-2");
+export const DEPLOYED_DIR = join(DSH_HOME, "profiles", "node_modules", "dsh-dt-bg");
 
 /**
  * 解析官方 `@deepseek-ai` 包所在目录。

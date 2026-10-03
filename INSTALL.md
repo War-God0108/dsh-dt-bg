@@ -1,4 +1,4 @@
-# dsh-web-bg-2 安装指南（给使用者）
+# dsh-dt-bg 安装指南（给使用者）
 
 给 DSH 界面换上图片壁纸或纯色背景，并让**侧边栏、内容区、输入框一起透出壁纸**。
 
@@ -14,15 +14,15 @@ DSH 自带的插件管理器支持从 **npm 包名 / `.tgz` 安装包 / git 仓�
 
 ### 情况 A：已经拿到 `.tgz` 文件
 
-从 [Releases 页面](https://github.com/War-God0108/dsh-web-bg-2/releases/latest) 下载
-`dsh-web-bg-2-2.0.0.tgz`，然后：
+从 [Releases 页面](https://github.com/War-God0108/dsh-dt-bg/releases/latest) 下载
+`dsh-dt-bg-2.0.0.tgz`，然后：
 
 1. 把它放到任意目录，例如 `D:\dsh-plugins\`
 2. 打开 DSH →「设置」→「内置插件」→ 找到安装/添加插件的输入框
 3. 填入该文件的**绝对路径**（注意是绝对路径）：
 
    ```
-   D:\dsh-plugins\dsh-web-bg-2-2.0.0.tgz
+   D:\dsh-plugins\dsh-dt-bg-2.0.0.tgz
    ```
 
 4. 确认安装，然后**重启 DSH**
@@ -34,13 +34,13 @@ DSH 自带的插件管理器支持从 **npm 包名 / `.tgz` 安装包 / git 仓�
 在同一个输入框里直接填包名：
 
 ```
-dsh-web-bg-2
+dsh-dt-bg
 ```
 
 ### 情况 C：从 git 仓库安装
 
 ```
-https://github.com/War-God0108/dsh-web-bg-2.git
+https://github.com/War-God0108/dsh-dt-bg.git
 ```
 
 ---
@@ -66,7 +66,7 @@ node install.mjs --uninstall
 
 脚本做两件事（幂等，重复执行安全）：
 
-1. 把插件部署到 `$DSH_HOME/profiles/node_modules/dsh-web-bg-2`
+1. 把插件部署到 `$DSH_HOME/profiles/node_modules/dsh-dt-bg`
 2. 在 `$DSH_HOME/profiles/<profile>/cordis.patch.yml` 里写入挂载条目（已存在则跳过，并自动备份原配置）
 
 装完**重启 DSH** 生效。
@@ -117,14 +117,14 @@ node install.mjs --uninstall
 ```
 
 然后重启 DSH。若要连插件文件一起删干净，删掉
-`$DSH_HOME/profiles/node_modules/dsh-web-bg-2` 目录即可。
+`$DSH_HOME/profiles/node_modules/dsh-dt-bg` 目录即可。
 
 ---
 
 ## 六、给打包者：如何生成分发包
 
 ```bash
-node tools/build-dist.mjs          # 生成 dist/dsh-web-bg-2-<version>.tgz
+node tools/build-dist.mjs          # 生成 dist/dsh-dt-bg-<version>.tgz
 node tools/verify-dist.mjs         # 在隔离沙箱里验证：安装 → 幂等 → 卸载
 ```
 
