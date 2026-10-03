@@ -28,8 +28,11 @@ if (existsSync(realScope)) {
 		}
 	}
 }
-/* 把部署副本也链进去，便于相对导入 */
-const pkgLink = join(work, "node_modules", "dsh-dt-bg");
+/* 把部署副本也链进去，便于相对导入。
+   链接名必须是**真实包名**（从 package.json 读）—— 写死过一次改名前后的旧名，
+   于是整个用例在"包名变了"之后一直假失败。 */
+const pkgName = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).name;
+const pkgLink = join(work, "node_modules", pkgName);
 if (!existsSync(pkgLink)) {
 	try {
 		symlinkSync(DEPLOYED_DIR, pkgLink, "junction");
@@ -39,7 +42,7 @@ if (!existsSync(pkgLink)) {
 const probe = `
 import { pathToFileURL } from "node:url";
 import { join } from "node:path";
-const entry = join(${JSON.stringify(work)}, "node_modules", "dsh-dt-bg", "lib", "index.js");
+const entry = join(${JSON.stringify(work)}, "node_modules", ${JSON.stringify(pkgName)}, "lib", "index.js");
 try {
   const mod = await import(pathToFileURL(entry).href);
   console.log("LOAD_OK");
@@ -73,3 +76,4 @@ if (out.includes("LOAD_FAIL")) {
 	const src = readFileSync(join(DEPLOYED_DIR, "lib", "index.js"), "utf8");
 	console.log(`  部署副本 ${src.split("\n").length} 行；含 readOwnSettings: ${src.includes("readOwnSettings")}`);
 }
+
