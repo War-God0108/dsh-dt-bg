@@ -18,7 +18,18 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SELF_DIR = dirname(fileURLToPath(import.meta.url));
+/** npm 包名 —— 也是 profile 里 `node_modules/<包名>` 的目录名。 */
 const PLUGIN_NAME = "dsh-dt-bg";
+/**
+ * 插件的「配置命名空间」，即挂载条目里 `name:` 的值。
+ *
+ * **它与 npm 包名不同，不要改成包名。** 这个名字由 `lib/index.js` 的 `name` 导出、
+ * 客户端半端的 `NAMESPACE`、以及 profile 里用户设置条目的 `- id:` 共同使用，
+ * 三者必须一致。踩过的坑：改包名时顺手把这里也改成 `dsh-dt-bg`，
+ * 结果 DSH 认为"没有实例与该配置行对应"，配置不再下发给插件 ——
+ * 用户看到插件退回出厂默认值（壁纸变内置兜底图、通透回到 100%）。
+ */
+const PLUGIN_ID = "web-bg-2";
 const ENTRY_ID = "web-bg-2";
 
 const argv = process.argv.slice(2);
@@ -47,7 +58,7 @@ const MOUNT_BLOCK = [
 	`# ${PLUGIN_NAME}: 背景替换插件 v2（由 install.mjs 写入，删除该条目即可卸载）`,
 	"- insert:",
 	`    - id: ${ENTRY_ID}`,
-	`      name: '${PLUGIN_NAME}'`,
+	`      name: '${PLUGIN_ID}'`,
 	""
 ].join("\n");
 
@@ -97,7 +108,7 @@ function removePackage() {
  * 不能用 `text.includes("name: 'dsh-dt-bg'")` 判断——配置条目（`- id: web-bg-2`
  * 那段）里也会出现同样的文本，早期就是这么误判并**重复追加**的（真机被追加成三份）。
  *
- * 这里按行扫描 `- insert:` → `- id: web-bg-2` → `name: …dsh-dt-bg…` 三行连续的形状；
+ * 这里按行扫描 `- insert:` → `- id: web-bg-2` → `name: …web-bg-2…` 三行连续的形状；
  * 注释行可有可无（YAML 序列化可能去掉引号，也可能没有注释行）。
  */
 function hasMountBlock(text) {
@@ -105,7 +116,7 @@ function hasMountBlock(text) {
 	for (let i = 0; i < lines.length - 2; i++) {
 		if (!lines[i].trimStart().startsWith("- insert:")) continue;
 		if (!lines[i + 1].includes(`- id: ${ENTRY_ID}`)) continue;
-		if (!/^\s*name:\s*['"]?dsh-dt-bg['"]?\s*$/.test(lines[i + 2])) continue;
+		if (!/^\\s*name:\\s*['"]?dsh-dt-bg['"]?\\s*$/.test(lines[i + 2])) continue;
 		return true;
 	}
 	return false;
@@ -156,7 +167,7 @@ function unmount() {
 		if (lines[i].includes(`${PLUGIN_NAME}:`) && lines[i].trimStart().startsWith("#")) {
 			/* 跳过注释行与其后的 - insert: / - id / name 三行 */
 			const rest = lines.slice(i + 1, i + 4).join("\n");
-			if (rest.includes("- insert:") && rest.includes(`name: '${PLUGIN_NAME}'`)) {
+			if (rest.includes("- insert:") && rest.includes(`name: '${PLUGIN_ID}'`)) {
 				i += 3;
 				continue;
 			}

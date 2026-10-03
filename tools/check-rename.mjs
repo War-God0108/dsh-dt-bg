@@ -23,9 +23,10 @@ const EXPECT = [
 	["package.json version", pkg.version, "2.0.0"],
 	["repository.url", pkg.repository.url, "https://github.com/War-God0108/dsh-dt-bg.git"],
 	["install.mjs PLUGIN_NAME（=部署目录名）", pick(install, /PLUGIN_NAME = "([^"]+)"/), "dsh-dt-bg"],
-	["install.mjs ENTRY_ID（=挂载 id，刻意不改）", pick(install, /ENTRY_ID = "([^"]+)"/), "web-bg-2"],
-	["cordis.patch.yml 挂载 name", pick(patch, /name: (.+)/).trim(), "dsh-dt-bg"],
-	["cordis.patch.yml 挂载 id", pick(patch, /- id: (.+)/).trim(), "web-bg-2"]
+	/* 命名空间与包名已统一为 dsh-dt-bg（id / name / NAMESPACE 三者必须相同） */
+	["install.mjs PLUGIN_ID（=配置命名空间）", pick(install, /const PLUGIN_ID = "([^"]+)"/), "dsh-dt-bg"],
+	["install.mjs ENTRY_ID（=挂载 id）", pick(install, /ENTRY_ID = "([^"]+)"/), "dsh-dt-bg"],
+	["cordis.patch.yml 挂载 name", pick(patch, /name: (.+)/).trim(), "dsh-dt-bg"]
 ];
 
 let bad = 0;
