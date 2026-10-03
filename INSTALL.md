@@ -12,7 +12,12 @@ DSH 自带的插件管理器支持从 **npm 包名 / `.tgz` 安装包 / git 仓�
 
 ### 情况 A：已经拿到 `.tgz` 文件
 
-1. 把 `dsh-web-bg-2-2.0.0.tgz` 放到任意目录，例如 `D:\dsh-plugins\`
+### 情况 A：已经拿到 `.tgz` 文件
+
+从 [Releases 页面](https://github.com/War-God0108/dsh-web-bg-2/releases/latest) 下载
+`dsh-web-bg-2-2.0.0.tgz`，然后：
+
+1. 把它放到任意目录，例如 `D:\dsh-plugins\`
 2. 打开 DSH →「设置」→「内置插件」→ 找到安装/添加插件的输入框
 3. 填入该文件的**绝对路径**（注意是绝对路径）：
 
@@ -35,7 +40,7 @@ dsh-web-bg-2
 ### 情况 C：从 git 仓库安装
 
 ```
-https://github.com/<作者>/dsh-web-bg-2.git
+https://github.com/War-God0108/dsh-web-bg-2.git
 ```
 
 ---

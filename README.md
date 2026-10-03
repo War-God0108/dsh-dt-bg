@@ -125,6 +125,18 @@ v1 的做法是「把不透明的背景层挂进布局根内部，用负 z-index
 
 ## 三、安装
 
+> 给使用者看的完整说明在 **[INSTALL.md](INSTALL.md)**（三种安装方式 + 常见问题）。
+> 一句话版本：从 [Releases](https://github.com/War-God0108/dsh-web-bg-2/releases/latest)
+> 下载 `.tgz` → DSH 里「设置 → 内置插件」填它的**绝对路径** → 重启 DSH。
+> 包自带 `dsh.bundle.patch`，装完**自动挂载**，不需要手工改配置。
+
+克隆仓库后也可以直接跑安装脚本：
+
+```bash
+git clone https://github.com/War-God0108/dsh-web-bg-2.git
+cd dsh-web-bg-2
+```
+
 ```bat
 node install.mjs                 :: 默认装进 $DSH_HOME/profiles/<DSH_PROFILE|desktop>
 node install.mjs --profile web   :: 装到另一个 profile（例如浏览器版）
