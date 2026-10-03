@@ -123,16 +123,16 @@ const missingFields = [];
 let finalText = text;
 if (missingFields.length > 0) {
 	console.log(`补齐缺失字段：${missingFields.join(", ")}`);
-	finalText = text.replace(
-		new RegExp(`(^- id:\\s*${NS}\\s*\\n(?:.*\\n)*?)(?=^- )`, "m"),
-		(match) => {
-			const extra = missingFields.map((k) => `    ${k}: ${NEED_DEFAULTS[k]}`).join("\n");
-			return `${match}${extra}\n`;
-		}
-	);
-	if (finalText === text) {
-		console.log("  （补齐失败：没找到插入点，将按原样恢复）");
-		finalText = text;
+	/* 插到"我们设置行的 config 块"末尾：
+	   从 `- id: <NS>` 起，吞掉所有**有缩进**的行（config 块），
+	   遇到顶层 `- ` 或注释行就停 —— 不能一路吃到下一个 insert 块。 */
+	const re = new RegExp(`(^- id:\\s*${NS}\\s*\\n(?:[ \\t].*\\n|\\n)*)`, "m");
+	const m = re.exec(text);
+	if (m === null) {
+		console.log("  （补齐失败：没找到插入点，按原样恢复）");
+	} else {
+		const extra = missingFields.map((k) => `    ${k}: ${NEED_DEFAULTS[k]}`).join("\n");
+		finalText = `${text.slice(0, m.index)}${m[1]}${extra}\n${text.slice(m.index + m[1].length)}`;
 	}
 }
 

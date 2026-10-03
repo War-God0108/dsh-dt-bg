@@ -672,7 +672,7 @@ test("诊断：collectDiagnostics 产出结构、令牌与已生效值", () => {
 	assert.equal(report.outerChain[0].id, "root");
 });
 
-test("首次运行种子：image 为空时采纳宿主给的壁纸并写入设置", async () => {
+test("宿主送回设置：插件读到默认值时采纳（含图片与视觉参数）", async () => {
 	buildApp();
 	const setCalls = [];
 	const snapshot = { value: { ...I.DEFAULTS }, writable: true };
@@ -687,10 +687,18 @@ test("首次运行种子：image 为空时采纳宿主给的壁纸并写入设�
 		unset: () => {}
 	});
 	api.apply(ctx);
-	const adopted = await I.adoptSeed({ image: "data:image/jpeg;base64,AAAA" });
-	assert.deepEqual(adopted, ["image", "kind"]);
-	assert.deepEqual(setCalls.map((c) => c[0]), ["image", "kind"]);
-	assert.equal(setCalls[0][1], "data:image/jpeg;base64,AAAA");
+	/* 宿主把整份设置随诊断响应送来；客户端在"读到的设置为默认"时采纳 */
+	const adopted = await I.adoptSeed({
+		image: "data:image/jpeg;base64,AAAA",
+		translucency: 0.6,
+		dim: 0.3,
+		scope: "all",
+		kind: "image"
+	});
+	assert.ok(adopted.includes("image"), "应写回 image");
+	assert.ok(adopted.includes("translucency"), "应写回 translucency");
+	assert.equal(snapshot.value.image, "data:image/jpeg;base64,AAAA");
+	assert.equal(snapshot.value.translucency, 0.6);
 	/* 第二次调用必须被忽略（一次会话只补一次） */
 	assert.deepEqual(await I.adoptSeed({ image: "data:image/jpeg;base64,BBBB" }), []);
 });
