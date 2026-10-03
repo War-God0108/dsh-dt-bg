@@ -26,7 +26,12 @@ console.log(`  NAMESPACE              = ${ns === null ? "(未找到)" : ns[1]}`)
 console.log(`  STYLE_ID               = ${st === null ? "(未找到)" : st[1]}`);
 
 const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
-const all = [pickId(src), ns?.[1], st?.[1]?.replace("/main", ""), pkg.name];
-const uniq = [...new Set(all)];
-console.log(`\n  包名 / 模块 id / NAMESPACE / STYLE_ID 前缀：${JSON.stringify(uniq)}`);
-console.log(uniq.length === 1 ? `  ✓ 四处同名：${uniq[0]}` : "  ✗ 不一致");
+/* 约束是「模块 id / NAMESPACE / STYLE_ID 前缀」三者一致，
+   **不要求**等于 npm 包名 —— 命名空间是插件的内部标识；
+   跟着包名改会让 DSH 找不到对应实例、配置不再下发（实测踩过，见 README）。 */
+const trio = [pickId(src), ns?.[1], st?.[1]?.replace("/main", "")];
+const uniq = [...new Set(trio)];
+console.log(`\n  模块 id / NAMESPACE / STYLE_ID 前缀：${JSON.stringify(uniq)}`);
+console.log(uniq.length === 1 ? `  ✓ 三者同名：${uniq[0]}` : "  ✗ 三者不一致 —— 配置不会下发到插件");
+console.log(`  npm 包名 = ${pkg.name}（与命名空间可以不同）`);
+if (uniq.length !== 1) process.exitCode = 1;
