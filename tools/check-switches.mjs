@@ -41,19 +41,39 @@ for (const [label, dir] of [
 	};
 
 	/* ---- 宿主侧 ---- */
-	check("宿主有读当前条目图片的函数", /function readOwnImage/.test(host), "没有它，客户端读不到配置里的图，画面会回落成内置兜底图");
-	check("诊断响应会送出 image", /seed:\s*image === ""/.test(host) || /seed:\s*Object\.keys/.test(host), "响应里没有 seed，客户端拿不到图");
+	/* 宿主读配置的函数名各版本可能不同（readOwnImage / readOwnSettings），
+	   所以按**能力**判定而不是按名字：必须存在一个读当前条目 image 的函数，
+	   并且它被导出（否则测试与工具没法直接验证它）。 */
+	const readerName = (/function (read\w*Own\w*)\s*\(/.exec(host) ?? [])[1] ?? null;
+	check(
+		"宿主有读当前条目配置的函数",
+		readerName !== null,
+		"没有它，客户端读不到配置里的图，画面会回落成内置兜底图"
+	);
+	if (readerName !== null) {
+		/* 只在这里判一次导出（早期版本在别处还写过一条用 `/name\s*\}/` 的断言，
+		   而导出列表里 `readOwnSettings,` 后面是逗号，那条永远失败）。 */
+		check(`该函数（${readerName}）已导出`, new RegExp(`export\\s*\\{[^}]*\\b${readerName}\\b`).test(host), "未导出则单测/工具无法直接验证它");
+	}
+	check("诊断响应会送出 seed.image", /seed\.image/.test(host), "响应里没有 image，客户端拿不到图");
+	/* 两处坑都在这条断言里踩过：
+	   ① 用 `indexOf("JSON.stringify(record)")` 会匹到**注释**里提到它的那行，
+	      得出"seed 写在序列化之后"的错误结论 —— 必须匹整行赋值语句；
+	   ② `readOwnSettings` 的导出后面跟的是逗号不是右花括号。 */
+	const seedLine = host.split("\n").findIndex((l) => /record\.seed\s*=/.test(l));
+	const lineLine = host.split("\n").findIndex((l) => /const line\s*=.*JSON\.stringify\(record\)/.test(l));
 	check(
 		"record.seed 在序列化之前",
-		(() => {
-			const rec = host.indexOf("const record = {");
-			const seed = host.indexOf("record.seed =", rec);
-			const str = host.indexOf("JSON.stringify(record)", rec);
-			return rec >= 0 && seed >= 0 && str >= 0 && seed < str;
-		})(),
-		"写在之后的话，磁盘记录里永远没有 seed —— 你会误判成「没送到」"
+		seedLine >= 0 && lineLine >= 0 && seedLine < lineLine,
+		`写在之后的话，磁盘记录里永远没有 seed —— 你会误判成「没送到」（seed 第 ${seedLine + 1} 行 / 序列化第 ${lineLine + 1} 行）`
 	);
-	check("宿主导出 readOwnImage", /readOwnImage\s*\}/.test(host), "未导出则单测/工具无法直接验证它");
+	if (readerName !== null) {
+		check(
+			`该函数（${readerName}）已导出`,
+			new RegExp(`export\\s*\\{[^}]*\\b${readerName}\\b`).test(host),
+			"未导出则单测/工具无法直接验证它"
+		);
+	}
 
 	/* ---- 客户端侧 ---- */
 	check("客户端有 adoptSeed", /async function adoptSeed/.test(client));

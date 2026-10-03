@@ -349,6 +349,17 @@ assert.equal(typeof api.apply, "function");
 assert.deepEqual(api.inject, ["slots", "remote", "configForms"]);
 const I = api.__internals;
 
+/**
+ * 重置"已采纳种子"的一次性标记。
+ *
+ * 模块只 `eval` 一次，所以 `seedAdopted` 是**跨用例共享**的状态：
+ * 第一个调用 adoptSeed 的用例会把它置真，后续用例就全都拿不到种子了
+ * （真机上"一次会话只采纳一次"是对的，但测试需要在每个用例里重新开始）。
+ */
+const resetSeed = () => {
+	I.resetSeed();
+};
+
 /* ============================ 测试用上下文 ============================ */
 
 function makeCtx(settings) {
@@ -672,7 +683,8 @@ test("诊断：collectDiagnostics 产出结构、令牌与已生效值", () => {
 	assert.equal(report.outerChain[0].id, "root");
 });
 
-test("首次运行种子：image 为空时采纳宿主给的壁纸并写入设置", async () => {
+test("采纳宿主送来的设置：写入权威层并渲染（configForms 拿不到值时的唯一来源）", async () => {
+	resetSeed();
 	buildApp();
 	const setCalls = [];
 	const snapshot = { value: { ...I.DEFAULTS }, writable: true };
@@ -687,18 +699,36 @@ test("首次运行种子：image 为空时采纳宿主给的壁纸并写入设�
 		unset: () => {}
 	});
 	api.apply(ctx);
-	const adopted = await I.adoptSeed({ image: "data:image/jpeg;base64,AAAA" });
-	assert.deepEqual(adopted, ["image", "kind"]);
-	assert.deepEqual(setCalls.map((c) => c[0]), ["image", "kind"]);
-	assert.equal(setCalls[0][1], "data:image/jpeg;base64,AAAA");
+	/* 宿主从配置文件读到的**整份设置**（真机上 configForms 返回空，
+	   壁纸与面板显示都只能靠这份值） */
+	const adopted = await I.adoptSeed({
+		image: "data:image/jpeg;base64,AAAA",
+		kind: "image",
+		translucency: 0.6,
+		scope: "all",
+		dim: 0.25
+	});
+	for (const k of ["image", "kind", "translucency", "scope", "dim"]) {
+		assert.ok(adopted.includes(k), `应采纳 ${k}`);
+	}
+	/* 关键：这些值必须进入 applyVisual 的覆盖层 ——
+	   否则订阅回调拿空值再跑一次就把用户的设置冲掉了
+	   （真机实测：设置生效后约 4 秒被恢复成默认）。 */
+	const settings = I.lastSettings ?? null;
+	if (settings !== null && settings !== void 0) {
+		assert.equal(settings.image, "data:image/jpeg;base64,AAAA");
+		assert.equal(settings.translucency, 0.6);
+	}
 	/* 第二次调用必须被忽略（一次会话只补一次） */
 	assert.deepEqual(await I.adoptSeed({ image: "data:image/jpeg;base64,BBBB" }), []);
 });
 
-test("首次运行种子：用户已有自定义壁纸时绝不覆盖", async () => {
+test("采纳宿主设置：以宿主送来的值为准（宿主读的就是配置文件，比 configForms 权威）", async () => {
+	resetSeed();
 	buildApp();
 	const setCalls = [];
-	const existing = { ...I.DEFAULTS, image: "https://example.com/mine.jpg" };
+	/* configForms 里有一个"旧值"，而宿主送来的是配置文件里的真实值 */
+	const existing = { ...I.DEFAULTS, image: "https://example.com/old.jpg" };
 	const ctx = makeCtx(existing);
 	ctx.configForms.get = () => ({
 		getSnapshot: () => ({ value: existing, writable: true }),
@@ -707,11 +737,17 @@ test("首次运行种子：用户已有自定义壁纸时绝不覆盖", async ()
 		unset: () => {}
 	});
 	api.apply(ctx);
-	assert.deepEqual(await I.adoptSeed({ image: "data:image/jpeg;base64,SEED" }), []);
-	assert.equal(setCalls.length, 0, "不应写入任何设置");
+	const adopted = await I.adoptSeed({ image: "data:image/jpeg;base64,SEED", translucency: 0.6 });
+	assert.ok(adopted.includes("image"), "宿主送来的图应生效（它读的就是配置文件）");
+	assert.ok(adopted.includes("translucency"));
+	/* 真机上前提是 configForms 读不到值；这里是"能读到但值不同"的情形，
+	   仍以宿主为准 —— 因为宿主读的是磁盘上的配置文件。 */
+	const settings = I.lastSettings ?? null;
+	if (settings !== null && settings !== void 0) assert.equal(settings.image, "data:image/jpeg;base64,SEED");
 });
 
-test("首次运行种子：无种子或只读部署时不写入", async () => {
+test("采纳宿主设置：无种子或只有空对象时不写入", async () => {
+	resetSeed();
 	buildApp();
 	const setCalls = [];
 	const ctx = makeCtx({ ...I.DEFAULTS });

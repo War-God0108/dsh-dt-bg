@@ -31,13 +31,15 @@ import { ROOT } from "./paths.mjs";
  */
 const CHECKS = [
 	["check-deployed.mjs", "源码与部署副本必须一致，且部署副本里的链路完整", false],
+	["check-settings-row.mjs", "设置行必须无条件注册（曾被 whileServed 门控住，用户因此看不到「背景」控件）", true],
 	["check-seed-order.mjs", "record.seed 必须写在序列化/写盘之前，否则磁盘记录里看不到它", true],
-	["check-switches.mjs", "排查开关的链路（schema→seed→客户端采纳→门控）必须完整", true],
+	["check-switches.mjs", "宿主读图 → seed → 客户端采纳这条链路必须完整", true],
 	["check-marking.mjs", "面板标记的选择器必须与脚本里的类名一致", true],
 	["check-corners.mjs", "圆角规则只能压平内容列左上角，不得清零官方圆角", true],
 	["check-titlebar-wiring.mjs", "顶栏配色链路的变量必须接对", true],
 	["check-inline-hover.mjs", "行内悬停反馈的实现必须完整（历史上被误删过）", true],
 	["test-host-load.mjs", "宿主半端必须能被 import（缺 import 只在调用时炸）", true],
+	["test-read-own.mjs", "宿主必须能从配置里读出壁纸（读不到画面就是内置兜底图）", true],
 	["test-write-settings.mjs", "设置写入必须**真跑一次**（改字段/追加字段/图片不受影响/可还原）", true]
 ];
 
