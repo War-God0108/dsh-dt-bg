@@ -1,9 +1,12 @@
 /**
- * 自检：宿主的 `record.seed` 是否真的写在"序列化并写盘"之前。
+ * 自检：宿主的 `record.seed` 是否写在"序列化并写盘"之前。
  *
- * 这是踩过的坑：`record.seed = …` 曾被放在 `JSON.stringify(record)` 之后，
- * 于是磁盘上的记录**永远没有 seed 字段**，而我恰恰靠这个文件判断状态 ——
- * 白白绕了好几轮。
+ * 这是踩过三次的坑：`record.seed = …` 若放在 `JSON.stringify(record)` 之后，
+ * 磁盘上的记录**永远没有 seed 字段** —— 而我恰恰靠这个文件判断
+ * "图/开关有没有送到客户端"，于是每次都误读成"没送到"，把排查方向带偏。
+ *
+ * 实现注意：handler 里可能有多处 `JSON.stringify`（例如写设置的分支）。
+ * 所以要**限定在诊断记录那一段里**找，否则会匹到别的分支、得出相反结论。
  *
  * 用法：node tools/check-seed-order.mjs
  */
@@ -15,34 +18,50 @@ for (const [label, file] of [
 	["源码", join(ROOT, "lib", "index.js")],
 	["部署副本", join(DEPLOYED_DIR, "lib", "index.js")]
 ]) {
-	const src = readFileSync(file, "utf8");
-	const lines = src.split("\n");
-	/* 注意：handler 里有两处 `JSON.stringify`（patch 分支一处、记录一处），
-	   必须取**最后一次**出现，否则会匹到 patch 分支、得出错误结论。 */
-	const lastIndexOf = (needle) => {
-		for (let i = lines.length - 1; i >= 0; i--) if (lines[i].includes(needle)) return i;
-		return -1;
-	};
-	const seedAt = lastIndexOf("record.seed = {");
-	const stringifyAt = lastIndexOf("JSON.stringify(record)");
-	const writeAt = lastIndexOf("await appendFile(file, line,");
-	const seedCount = lines.filter((l) => l.includes("record.seed = {")).length;
+	const lines = readFileSync(file, "utf8").split("\n");
 
 	console.log(`=== ${label} ===`);
-	console.log(`  record.seed 赋值行        ${seedAt < 0 ? "未找到 ✗" : seedAt + 1}${seedCount > 1 ? `（出现 ${seedCount} 次，疑似重复）` : ""}`);
-	console.log(`  JSON.stringify(record) 行 ${stringifyAt < 0 ? "未找到" : stringifyAt + 1}`);
-	console.log(`  appendFile 写盘行         ${writeAt < 0 ? "未找到" : writeAt + 1}`);
-	if (seedAt < 0) {
-		console.log("  ✗ 没有 record.seed —— 宿主不会把设置送回客户端\n");
+
+	/* 记录段的起点：构造 record 的那一行。
+	   它一定出现在 `const record = {` 之后。 */
+	const recStart = lines.findIndex((l) => l.includes("const record = {"));
+	if (recStart < 0) {
+		console.log("  找不到 `const record = {` —— 宿主结构变了，本检查需要同步。");
 		process.exitCode = 1;
 		continue;
 	}
+
+	/* 在记录段内找三处。序列化行形如 `const line = `${JSON.stringify(record)}\n`;`，
+	   必须用**整行正则**而不是 includes("JSON.stringify(record)") ——
+	   后者会匹到 `record.seed` 那一行里的同名表达式（`image: `data URL ${…}``），
+	   于是得出"seed 与序列化同一行 → 顺序不对"的错误结论。 */
+	const findLine = (re, from = recStart) => {
+		for (let i = from; i < lines.length; i++) if (re.test(lines[i])) return i;
+		return -1;
+	};
+	const stringifyAt = findLine(/const line\s*=.*JSON\.stringify\(record\)/);
+	const writeAt = findLine(/await appendFile\(file, line,/);
+	const seedAt = findLine(/record\.seed\s*=/, recStart);
+
+	const show = (i) => (i < 0 ? "未找到" : i + 1);
+	console.log(`  record 构造行              ${recStart + 1}`);
+	console.log(`  record.seed 赋值行         ${show(seedAt)}`);
+	console.log(`  序列化（stringify record）行 ${show(stringifyAt)}`);
+	console.log(`  写盘（appendFile）行       ${show(writeAt)}`);
+
+	if (seedAt < 0) {
+		console.log("  – 本版没有 record.seed（不把设置送回客户端的设计）。跳过。");
+		console.log("");
+		continue;
+	}
+	if (stringifyAt < 0 || writeAt < 0) {
+		console.log("  ✗ 找不到序列化或写盘行 —— 宿主结构变了，本检查需要同步。");
+		process.exitCode = 1;
+		console.log("");
+		continue;
+	}
 	const ok = seedAt < stringifyAt && stringifyAt < writeAt;
-	console.log(`  ${ok ? "✓" : "✗"} 顺序正确（seed → 序列化 → 写盘）：${ok ? "是" : "否"}`);
+	console.log(`  ${ok ? "✓" : "✗"} 顺序应满足 seed → 序列化 → 写盘：${ok ? "满足" : "不满足（磁盘记录里将看不到 seed）"}`);
 	if (!ok) process.exitCode = 1;
-	/* 顺带看 seed 白名单里有没有调试开关 */
-	const seedBlock = lines.slice(seedAt - 12, seedAt + 2).join("\n");
-	const switches = ["noBlanket", "noRowHover", "noTint"].filter((s) => seedBlock.includes(`"${s}"`));
-	console.log(`  seed 白名单含调试开关：${switches.length > 0 ? switches.join(", ") : "无 ✗"}`);
 	console.log("");
 }

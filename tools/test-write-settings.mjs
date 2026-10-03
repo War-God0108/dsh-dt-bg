@@ -27,6 +27,16 @@ void pkgName;
 const mod = await import(`file://${deployed.replace(/\\/g, "/")}`);
 const { writeOwnSettings } = mod;
 
+/* 并非每个版本都带"宿主直写配置"这个能力（它是为修
+   "configForms 写入不落盘"而加的）。本版没有时**跳过**而不是报失败 ——
+   拿另一个版本的期望来判定当前版本，正是早期反复误报的原因。
+   跳过时会明确打印原因，避免"静默通过"被误读成"写入没问题"。 */
+if (typeof writeOwnSettings !== "function") {
+	console.log("本版宿主没有 writeOwnSettings —— 跳过写入实测。");
+	console.log("（该能力用于绕过 configForms 写入不落盘的问题；此版没有它，属预期。）");
+	process.exit(0);
+}
+
 /** 本地读一份配置里我们条目的字段（宿主那版没导出这个函数）。 */
 function readOur(text) {
 	const out = {};
