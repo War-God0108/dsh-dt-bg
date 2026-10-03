@@ -143,6 +143,20 @@ class El {
 	}
 	querySelectorAll(selector) {
 		const out = [];
+		/* 逗号分隔的选择器组：生产代码用它一次查出所有交互控件
+		   （`button,[role="button"],[role="switch"],input,…`）。
+		   夹具早期不支持，导致"控件豁免"这类用例静默查不到东西。 */
+		if (selector.includes(",")) {
+			const seen = new Set();
+			for (const part of selector.split(",")) {
+				for (const el of this.querySelectorAll(part.trim())) {
+					if (seen.has(el)) continue;
+					seen.add(el);
+					out.push(el);
+				}
+			}
+			return out;
+		}
 		const match = (el) => {
 			if (selector.startsWith("style[")) return el.tagName === "STYLE" && el.dataset.pluginCss !== void 0;
 			const attr = /^\[data-([a-z0-9-]+)(?:=([a-z]+))?\]$/i.exec(selector);
@@ -820,7 +834,31 @@ test("样式表：面板内的无差别中和规则仍须排除插件自身控�
 			sel.includes(":not([class*=wbg2])"),
 			`无差别中和规则必须排除插件控件：${sel.slice(0, 120)}`
 		);
+		/* 真机事故：启用插件后官方开关、"添加插件"按钮全部消失 ——
+		   它们靠背景色显形，又被 blanket 一刀切成透明。控件必须豁免。
+		   这条断言就是为了防止规则被改回"一刀切"。 */
+		assert.ok(
+			sel.includes(":not([data-wbg2-keepbg])"),
+			`无差别中和规则必须豁免靠背景显形的控件（否则官方开关会消失）：${sel.slice(0, 160)}`
+		);
 	}
+});
+
+test("控件豁免：blanket 生效时给官方控件打 keepbg 标记", () => {
+	const { main } = buildApp();
+	/* 造一个"官方开关"：button + role=switch，带背景色 */
+	const sw = document.createElement("button");
+	sw.setAttribute("role", "switch");
+	sw.className = "officialSwitch";
+	main.appendChild(sw);
+	api.apply(makeCtx({ ...I.DEFAULTS }));
+	assert.equal(sw.getAttribute("data-wbg2-keepbg"), "1", "官方开关必须被标记为保留背景");
+	/* 插件自己的控件不该被标记（它本来就被 :not([class*=wbg2]) 排除） */
+	const own = document.createElement("button");
+	own.className = "wbg2-switch";
+	main.appendChild(own);
+	api.apply(makeCtx({ ...I.DEFAULTS }));
+	assert.equal(own.getAttribute("data-wbg2-keepbg"), null, "插件自身控件不需要豁免标记");
 });
 
 test("面板识别：只压平内容列的左上角，其余圆角必须保留", () => {
