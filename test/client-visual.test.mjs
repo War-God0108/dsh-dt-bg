@@ -691,35 +691,28 @@ test("诊断：collectDiagnostics 产出结构、令牌与已生效值", () => {
 	assert.equal(report.outerChain[0].id, "root");
 });
 
-test("采纳宿主送来的设置：写入本地权威层并渲染（configForms 读不到时的唯一来源）", async () => {
+test("首次运行种子：image 为空时采纳宿主给的壁纸并写入设置", async () => {
 	buildApp();
+	const setCalls = [];
 	const snapshot = { value: { ...I.DEFAULTS }, writable: true };
 	const ctx = makeCtx({ ...I.DEFAULTS });
 	ctx.configForms.get = () => ({
 		getSnapshot: () => snapshot,
 		subscribe: () => () => {},
-		set: () => {},
+		set: (key, value) => {
+			setCalls.push([key, value]);
+			snapshot.value = { ...snapshot.value, [key]: value };
+		},
 		unset: () => {}
 	});
 	api.apply(ctx);
-	/* 宿主从配置文件读到的真实值（含图片与视觉参数），随诊断响应送回 */
-	const adopted = await I.adoptSeed({
-		image: "data:image/jpeg;base64,AAAA",
-		kind: "image",
-		translucency: 0.6,
-		scope: "all",
-		dim: 0.25
-	});
-	for (const k of ["image", "kind", "translucency", "scope", "dim"]) {
-		assert.ok(adopted.includes(k), `应采纳 ${k}`);
-	}
-	/* 关键：这些值必须进入 applyVisual 的最终覆盖层 ——
-	   否则订阅回调拿默认值再跑一次就把用户的设置冲掉了 */
-	const settings = I.lastSettings ?? (typeof I.getLastSettings === "function" ? I.getLastSettings() : null);
-	if (settings !== null && settings !== void 0) {
-		assert.equal(settings.image, "data:image/jpeg;base64,AAAA");
-		assert.equal(settings.translucency, 0.6);
-	}
+	/* 这一版的种子只补 image ——
+	   历史上的"整份设置接管"（committedSettings + 各种豁免）已经把官方
+	   「新会话」的底色与跟随鼠标的悬停动画改坏，被整体撤掉了。 */
+	const adopted = await I.adoptSeed({ image: "data:image/jpeg;base64,AAAA" });
+	assert.deepEqual(adopted, ["image", "kind"]);
+	assert.equal(snapshot.value.image, "data:image/jpeg;base64,AAAA");
+	assert.equal(snapshot.value.kind, "image");
 	/* 第二次调用必须被忽略（一次会话只补一次） */
 	assert.deepEqual(await I.adoptSeed({ image: "data:image/jpeg;base64,BBBB" }), []);
 });
@@ -837,36 +830,14 @@ test("样式表：面板内的无差别中和规则仍须排除插件自身控�
 			sel.includes(":not([class*=wbg2])"),
 			`无差别中和规则必须排除插件控件：${sel.slice(0, 120)}`
 		);
-		/* 真机事故：启用插件后官方开关、"添加插件"按钮全部消失 ——
-		   它们靠背景色显形，又被 blanket 一刀切成透明。控件必须豁免。
-		   这条断言就是为了防止规则被改回"一刀切"。 */
-		assert.ok(
-			sel.includes(":not([data-wbg2-keepbg])") && sel.includes(":not([data-wbg2-keepbgdescendants])"),
-			`无差别中和规则必须豁免靠背景显形的控件及其内部零件（否则官方开关会消失/只剩轮廓）：${sel.slice(0, 200)}`
-		);
+		/* 注：曾给这条规则加过"控件豁免"（`:not([data-wbg2-keepbg])`），
+		   用于修"启用插件后官方开关/按钮消失"。但那批改动同时把官方
+		   「新会话」的底色与跟随鼠标的悬停动画改坏了，已**整体撤销**，
+		   回到了用户确认外观正常的那一版。
+		   代价是"开关可能又看不见" —— 如果真机复现，正确做法是**重做一份
+		   精确的豁免**（只针对控件子树），而不是恢复当时那版。
+		   这里不断言豁免存在，只记录该权衡。 */
 	}
-});
-
-test("控件豁免：blanket 生效时给官方控件**及其内部零件**打豁免标记", () => {
-	const { main } = buildApp();
-	/* 造一个"官方开关"：button + role=switch，内部有一个圆形滑块（子元素）。
-	   真机第二次事故就是漏了这层：开关只剩很淡的轮廓、圆钮不见。 */
-	const sw = document.createElement("button");
-	sw.setAttribute("role", "switch");
-	sw.className = "officialSwitch";
-	const knob = document.createElement("span");
-	knob.className = "officialKnob";
-	sw.appendChild(knob);
-	main.appendChild(sw);
-	api.apply(makeCtx({ ...I.DEFAULTS }));
-	assert.equal(sw.getAttribute("data-wbg2-keepbg"), "1", "官方开关必须被标记为保留背景");
-	assert.equal(knob.getAttribute("data-wbg2-keepbgdescendants"), "1", "开关内部的圆钮也必须被豁免");
-	/* 插件自己的控件不该被标记（它本来就被 :not([class*=wbg2]) 排除） */
-	const own = document.createElement("button");
-	own.className = "wbg2-switch";
-	main.appendChild(own);
-	api.apply(makeCtx({ ...I.DEFAULTS }));
-	assert.equal(own.getAttribute("data-wbg2-keepbg"), null, "插件自身控件不需要豁免标记");
 });
 
 test("面板识别：只压平内容列的左上角，其余圆角必须保留", () => {
