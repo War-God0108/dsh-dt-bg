@@ -19,18 +19,21 @@ const pick = (text, re) => {
 };
 
 const EXPECT = [
-	/* npm 包名 / 仓库名 / 部署目录名 —— 这些随包名走 */
+	/* npm 包名 / 仓库名 / 部署目录名 */
 	["package.json name", pkg.name, "dsh-dt-bg"],
 	["package.json version", pkg.version, "2.0.0"],
 	["repository.url", pkg.repository.url, "https://github.com/War-God0108/dsh-dt-bg.git"],
 	["install.mjs PLUGIN_NAME（=部署目录名）", pick(install, /PLUGIN_NAME = "([^"]+)"/), "dsh-dt-bg"],
-	/* 配置命名空间 —— **不随包名改**：它是插件的内部标识，
-	   改了会让 DSH 找不到对应实例、配置不再下发（实测踩过，见 README）。 */
-	["install.mjs PLUGIN_ID（=配置命名空间）", pick(install, /const PLUGIN_ID = "([^"]+)"/), "web-bg-2"],
-	["install.mjs ENTRY_ID（=挂载 id）", pick(install, /ENTRY_ID = "([^"]+)"/), "web-bg-2"],
-	["cordis.patch.yml 挂载 name", pick(patch, /name: (.+)/).trim(), "web-bg-2"],
-	["lib/index.js 导出 name", pick(host, /const name = "([^"]+)"/), "web-bg-2"],
-	["lib/client.js NAMESPACE", pick(client, /const NAMESPACE = "([^"]+)"/), "web-bg-2"]
+	/* 配置命名空间：**必须等于一个能被 Node 解析到的包名**。
+	   实测（createRequire 从 profile 目录解析）：
+	     dsh-dt-bg → 解析成功 ✓
+	     web-bg-2  → 解析失败 ✗（插件会加载不了，真机提示"背景插件未启用"）
+	   所以这里取包名；它与模块 id / NAMESPACE / STYLE_ID 也必须一致。 */
+	["install.mjs PLUGIN_ID（=配置命名空间）", pick(install, /const PLUGIN_ID = "([^"]+)"/), "dsh-dt-bg"],
+	["install.mjs ENTRY_ID（=挂载 id）", pick(install, /ENTRY_ID = "([^"]+)"/), "dsh-dt-bg"],
+	["cordis.patch.yml 挂载 name", pick(patch, /name: (.+)/).trim(), "dsh-dt-bg"],
+	["lib/index.js 导出 name", pick(host, /const name = "([^"]+)"/), "dsh-dt-bg"],
+	["lib/client.js NAMESPACE", pick(client, /const NAMESPACE = "([^"]+)"/), "dsh-dt-bg"]
 ];
 
 let bad = 0;
