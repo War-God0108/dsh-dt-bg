@@ -29,8 +29,8 @@ const PLUGIN_NAME = "dsh-dt-bg";
  * 结果 DSH 认为"没有实例与该配置行对应"，配置不再下发给插件 ——
  * 用户看到插件退回出厂默认值（壁纸变内置兜底图、通透回到 100%）。
  */
-const PLUGIN_ID = "web-bg-2";
-const ENTRY_ID = "web-bg-2";
+const PLUGIN_ID = "dsh-dt-bg";
+const ENTRY_ID = "dsh-dt-bg";
 
 const argv = process.argv.slice(2);
 const flag = (name) => argv.includes(name);
@@ -105,19 +105,23 @@ function removePackage() {
 /**
  * 是否已经有我们写的 insert 挂载块。
  *
- * 不能用 `text.includes("name: 'dsh-dt-bg'")` 判断——配置条目（`- id: web-bg-2`
- * 那段）里也会出现同样的文本，早期就是这么误判并**重复追加**的（真机被追加成三份）。
+ * 判定只看 **`- insert:` 块里的 `- id:` 是否等于我们的条目 id**，
+ * 不看 `name:` —— 历史上有过好几种 name 写法（`dsh-web-bg-2` / `web-bg-2` / `dsh-dt-bg`），
+ * 一旦把 name 也纳入判定，换个名字就会认不出旧块，于是**重复追加**
+ * （真机被追加成三份，设置页出现两组「背景」）。
  *
- * 这里按行扫描 `- insert:` → `- id: web-bg-2` → `name: …web-bg-2…` 三行连续的形状；
- * 注释行可有可无（YAML 序列化可能去掉引号，也可能没有注释行）。
+ * 也不能用 `text.includes("name: '<包名>'")` 判断：配置条目（`- id: …` + `config:`）
+ * 里会出现同样的文本，早期就是这么误判的。
  */
 function hasMountBlock(text) {
 	const lines = text.split("\n");
-	for (let i = 0; i < lines.length - 2; i++) {
+	for (let i = 0; i < lines.length - 1; i++) {
 		if (!lines[i].trimStart().startsWith("- insert:")) continue;
-		if (!lines[i + 1].includes(`- id: ${ENTRY_ID}`)) continue;
-		if (!/^\\s*name:\\s*['"]?dsh-dt-bg['"]?\\s*$/.test(lines[i + 2])) continue;
-		return true;
+		/* id 在 insert 块内，紧跟在后面若干行 */
+		for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+			if (lines[j].trimStart().startsWith("- insert:")) break;
+			if (new RegExp(`^\\s*-\\s*id:\\s*['"]?${ENTRY_ID}['"]?\\s*$`).test(lines[j])) return true;
+		}
 	}
 	return false;
 }

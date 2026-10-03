@@ -19,5 +19,5 @@
 #       scope: all
 #
 - insert:
-    - id: web-bg-2
-      name: web-bg-2
+    - id: dsh-dt-bg
+      name: dsh-dt-bg
