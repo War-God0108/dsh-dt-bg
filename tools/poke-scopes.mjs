@@ -3,9 +3,10 @@
  * 用法：node tools/poke-scopes.mjs
  */
 import { execFileSync } from "node:child_process";
+import { DSH_HOME, homedir, resolveDshModules } from "./paths.mjs";
 
-const YAML = "C:/Users/31259/AppData/Local/npm-cache/_npx/1e7f6d9597241db0/node_modules/yaml";
-const CONFIG = "C:/Users/31259/.dsh/profiles/desktop/cordis.patch.yml";
+const YAML = join(resolveDshModules(), "..", "yaml");
+const CONFIG = join(DSH_HOME, "profiles", "desktop", "cordis.patch.yml");
 const node = process.execPath;
 
 function setConfig(patch) {
