@@ -1,8 +1,8 @@
 /**
- * dsh-dt-bg 安装脚本（幂等）。
+ * dsh-web-bg-2 安装脚本（幂等）。
  *
  * 做两件事：
- *   1. 把插件包部署到 `<DSH_HOME>/profiles/node_modules/dsh-dt-bg`
+ *   1. 把插件包部署到 `<DSH_HOME>/profiles/node_modules/dsh-web-bg-2`
  *      （先删后拷，避免旧文件残留）；
  *   2. 在目标 profile 的 `cordis.patch.yml` 里挂上 `web-bg-2` 条目（已挂则跳过）。
  *
@@ -18,19 +18,8 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SELF_DIR = dirname(fileURLToPath(import.meta.url));
-/** npm 包名 —— 也是 profile 里 `node_modules/<包名>` 的目录名。 */
-const PLUGIN_NAME = "dsh-dt-bg";
-/**
- * 插件的「配置命名空间」，即挂载条目里 `name:` 的值。
- *
- * **它与 npm 包名不同，不要改成包名。** 这个名字由 `lib/index.js` 的 `name` 导出、
- * 客户端半端的 `NAMESPACE`、以及 profile 里用户设置条目的 `- id:` 共同使用，
- * 三者必须一致。踩过的坑：改包名时顺手把这里也改成 `dsh-dt-bg`，
- * 结果 DSH 认为"没有实例与该配置行对应"，配置不再下发给插件 ——
- * 用户看到插件退回出厂默认值（壁纸变内置兜底图、通透回到 100%）。
- */
-const PLUGIN_ID = "dsh-dt-bg";
-const ENTRY_ID = "dsh-dt-bg";
+const PLUGIN_NAME = "dsh-web-bg-2";
+const ENTRY_ID = "web-bg-2";
 
 const argv = process.argv.slice(2);
 const flag = (name) => argv.includes(name);
@@ -47,9 +36,9 @@ const patchFile = join(profilesDir, profileName, "cordis.patch.yml");
 const dryRun = flag("--dry-run");
 const uninstall = flag("--uninstall");
 
-const log = (message) => console.log(`dsh-dt-bg: ${message}`);
+const log = (message) => console.log(`dsh-web-bg-2: ${message}`);
 const fail = (message) => {
-	console.error(`dsh-dt-bg: ${message}`);
+	console.error(`dsh-web-bg-2: ${message}`);
 	process.exitCode = 1;
 };
 
@@ -58,7 +47,7 @@ const MOUNT_BLOCK = [
 	`# ${PLUGIN_NAME}: 背景替换插件 v2（由 install.mjs 写入，删除该条目即可卸载）`,
 	"- insert:",
 	`    - id: ${ENTRY_ID}`,
-	`      name: '${PLUGIN_ID}'`,
+	`      name: '${PLUGIN_NAME}'`,
 	""
 ].join("\n");
 
@@ -105,23 +94,19 @@ function removePackage() {
 /**
  * 是否已经有我们写的 insert 挂载块。
  *
- * 判定只看 **`- insert:` 块里的 `- id:` 是否等于我们的条目 id**，
- * 不看 `name:` —— 历史上有过好几种 name 写法（`dsh-web-bg-2` / `web-bg-2` / `dsh-dt-bg`），
- * 一旦把 name 也纳入判定，换个名字就会认不出旧块，于是**重复追加**
- * （真机被追加成三份，设置页出现两组「背景」）。
+ * 不能用 `text.includes("name: 'dsh-web-bg-2'")` 判断——配置条目（`- id: web-bg-2`
+ * 那段）里也会出现同样的文本，早期就是这么误判并**重复追加**的（真机被追加成三份）。
  *
- * 也不能用 `text.includes("name: '<包名>'")` 判断：配置条目（`- id: …` + `config:`）
- * 里会出现同样的文本，早期就是这么误判的。
+ * 这里按行扫描 `- insert:` → `- id: web-bg-2` → `name: …dsh-web-bg-2…` 三行连续的形状；
+ * 注释行可有可无（YAML 序列化可能去掉引号，也可能没有注释行）。
  */
 function hasMountBlock(text) {
 	const lines = text.split("\n");
-	for (let i = 0; i < lines.length - 1; i++) {
+	for (let i = 0; i < lines.length - 2; i++) {
 		if (!lines[i].trimStart().startsWith("- insert:")) continue;
-		/* id 在 insert 块内，紧跟在后面若干行 */
-		for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
-			if (lines[j].trimStart().startsWith("- insert:")) break;
-			if (new RegExp(`^\\s*-\\s*id:\\s*['"]?${ENTRY_ID}['"]?\\s*$`).test(lines[j])) return true;
-		}
+		if (!lines[i + 1].includes(`- id: ${ENTRY_ID}`)) continue;
+		if (!/^\s*name:\s*['"]?dsh-web-bg-2['"]?\s*$/.test(lines[i + 2])) continue;
+		return true;
 	}
 	return false;
 }
@@ -171,7 +156,7 @@ function unmount() {
 		if (lines[i].includes(`${PLUGIN_NAME}:`) && lines[i].trimStart().startsWith("#")) {
 			/* 跳过注释行与其后的 - insert: / - id / name 三行 */
 			const rest = lines.slice(i + 1, i + 4).join("\n");
-			if (rest.includes("- insert:") && rest.includes(`name: '${PLUGIN_ID}'`)) {
+			if (rest.includes("- insert:") && rest.includes(`name: '${PLUGIN_NAME}'`)) {
 				i += 3;
 				continue;
 			}

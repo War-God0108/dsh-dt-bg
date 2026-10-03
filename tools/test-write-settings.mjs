@@ -12,22 +12,52 @@
 import { copyFileSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
-import { CONFIG_FILE, resolveDshModules } from "./paths.mjs";
+import { CONFIG_FILE, DEPLOYED_DIR, resolveDshModules, ROOT } from "./paths.mjs";
 
 const require = createRequire(import.meta.url);
 const YAML = require(join(resolveDshModules(), "..", "yaml"));
 
-/* 直接加载部署副本的宿主半端（依赖在 profile 里可解析） */
-const deployed = join(process.env.USERPROFILE ?? "", ".dsh", "profiles", "node_modules", "dsh-dt-bg", "lib", "index.js");
+/* 直接加载部署副本的宿主半端（依赖在 profile 里可解析）。
+   包名从 package.json 取，别写死 —— 改名/回退过一次，写死就会指向不存在的目录。 */
+const pkgName = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).name;
+/* 配置条目的 id 是**命名空间**，不是包名（两者故意不同）。 */
+const NS = "web-bg-2";
+const deployed = join(DEPLOYED_DIR, "lib", "index.js");
+void pkgName;
 const mod = await import(`file://${deployed.replace(/\\/g, "/")}`);
-const { writeOwnSettings, readOwnSettings } = mod;
+const { writeOwnSettings } = mod;
+
+/** 本地读一份配置里我们条目的字段（宿主那版没导出这个函数）。 */
+function readOur(text) {
+	const out = {};
+	let inside = false;
+	let config = false;
+	for (const line of text.split("\n")) {
+		const t = line.trim();
+		if (t === `- id: ${NS}`) {
+			inside = true;
+			config = false;
+			continue;
+		}
+		if (!inside) continue;
+		if (/^- /.test(line) && !t.startsWith("- id:")) break;
+		if (t === "config:") {
+			config = true;
+			continue;
+		}
+		if (!config) continue;
+		const m = /^([A-Za-z][\w-]*):\s*(.+)$/.exec(t);
+		if (m !== null) out[m[1]] = m[2].replace(/^["']|["']$/g, "");
+	}
+	return out;
+}
 
 const before = readFileSync(CONFIG_FILE, "utf8");
 const backup = `${CONFIG_FILE}.bak-writetest-${Date.now()}`;
 copyFileSync(CONFIG_FILE, backup);
 console.log(`原配置已备份 → ${backup}\n`);
 
-const orig = readOwnSettings();
+const orig = readOur(before);
 console.log("写入前：translucency =", orig.translucency, " dim =", orig.dim, " 图片 =", orig.image?.length ?? 0, "字符\n");
 
 /* ① 改一个已有字段 */
@@ -36,7 +66,7 @@ let r = writeOwnSettings({ translucency: NEW_TL });
 console.log("① writeOwnSettings({translucency: 0.47}) →", JSON.stringify(r));
 let after = readFileSync(CONFIG_FILE, "utf8");
 let parsed = YAML.parse(after);
-const row = parsed.find((e) => e !== null && typeof e === "object" && e.id === "dsh-dt-bg" && e.config !== void 0);
+const row = parsed.find((e) => e !== null && typeof e === "object" && e.id === NS && e.config !== void 0);
 console.log("   写后 YAML 解析：成功；translucency =", row?.config?.translucency, "（应为", NEW_TL + "）");
 console.log("   图片仍在：", typeof row?.config?.image === "string" ? row.config.image.length + " 字符" : "✗ 丢了");
 
@@ -45,7 +75,7 @@ r = writeOwnSettings({ color: "#abcdef" });
 console.log("\n② writeOwnSettings({color: '#abcdef'}) →", JSON.stringify(r));
 after = readFileSync(CONFIG_FILE, "utf8");
 parsed = YAML.parse(after);
-const row2 = parsed.find((e) => e !== null && typeof e === "object" && e.id === "dsh-dt-bg" && e.config !== void 0);
+const row2 = parsed.find((e) => e !== null && typeof e === "object" && e.id === NS && e.config !== void 0);
 console.log("   写后 YAML 解析：成功；color =", row2?.config?.color, "（应为 #abcdef）");
 console.log("   config 字段：", Object.keys(row2?.config ?? {}).join(", "));
 
@@ -69,3 +99,5 @@ console.log(`   涉及图片行的改动：${risky.length === 0 ? "无 ✓" : ri
 copyFileSync(backup, CONFIG_FILE);
 const restored = readFileSync(CONFIG_FILE, "utf8");
 console.log(`\n④ 已还原：与写入前逐字节一致 = ${restored === before}`);
+
+

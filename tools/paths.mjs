@@ -5,7 +5,7 @@
  * 用法：
  *   import { ROOT, CONFIG_FILE, DIAG_FILE, resolveDshModules } from "./paths.mjs";
  */
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -25,8 +25,11 @@ export const CONFIG_FILE = join(DSH_HOME, "profiles", PROFILE, "cordis.patch.yml
 /** 客户端诊断输出（宿主半端写入的 JSONL）。 */
 export const DIAG_FILE = join(DSH_HOME, ".dsh-web-bg2-diagnostics.jsonl");
 
-/** 插件在 profile 里的部署位置。 */
-export const DEPLOYED_DIR = join(DSH_HOME, "profiles", "node_modules", "dsh-dt-bg");
+/** 插件在 profile 里的部署位置：目录名 = npm 包名。
+    从 package.json 读，别写死 —— 包名改过一次又回退过，写死就会指向不存在的目录。 */
+const PKG_NAME = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf8")).name;
+export const PACKAGE_NAME = PKG_NAME;
+export const DEPLOYED_DIR = join(DSH_HOME, "profiles", "node_modules", PKG_NAME);
 
 /**
  * 解析官方 `@deepseek-ai` 包所在目录。

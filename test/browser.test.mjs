@@ -15,7 +15,7 @@ import { dirname, extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const ROOT = dirname(here); // dsh-dt-bg/
+const ROOT = dirname(here); // dsh-web-bg-2/
 const REPO = dirname(ROOT); // 工作区根（官方令牌样式表在 dsh-web-bg/test 下）
 
 const BROWSERS = [

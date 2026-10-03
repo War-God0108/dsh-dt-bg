@@ -1,5 +1,5 @@
 /**
- * dsh-dt-bg 客户端半端的可视行为测试（零依赖：自带最小 DOM 夹具）。
+ * dsh-web-bg-2 客户端半端的可视行为测试（零依赖：自带最小 DOM 夹具）。
  *
  * 运行：node test\client-visual.test.mjs
  *
@@ -208,7 +208,7 @@ class Doc extends El {
 		const inside = (el) => {
 			const r = el.getBoundingClientRect();
 			if (r.width <= 0 || r.height <= 0) return false;
-			if (el.id === "dsh-dt-bg-layer" || el.id === "dsh-dt-bg-veil") return false;
+			if (el.id === "dsh-web-bg-2-layer" || el.id === "dsh-web-bg-2-veil") return false;
 			return x >= r.left && x < r.left + r.width && y >= r.top && y < r.top + r.height;
 		};
 		const walk = (el, isRoot) => {
@@ -340,7 +340,9 @@ globalThis.window.__ModuleLoader__ = {
 /* eslint-disable-next-line no-eval */
 (0, eval)(SOURCE);
 assert.ok(loaded !== null, "bundle 必须调用 __ModuleLoader__.load");
-assert.equal(loaded.id, "dsh-dt-bg");
+/* 模块 id 用包名：从 package.json 读，避免改包名后测试误判（踩过一次）。 */
+const PKG_NAME = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).name;
+assert.equal(loaded.id, PKG_NAME);
 const api = loaded.factory((name) => {
 	if (name === "react") return react;
 	throw new Error(`未预期的 require("${name}")`);
@@ -411,7 +413,7 @@ const cases = [];
 const test = (name, fn) => cases.push([name, fn]);
 
 test("模块契约：id、inject、apply 与 __internals", () => {
-	assert.equal(loaded.id, "dsh-dt-bg");
+	assert.equal(loaded.id, JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).name);
 	assert.equal(typeof I.applyVisual, "function");
 	assert.equal(typeof I.classifyFrameChildren, "function");
 	assert.equal(typeof I.collectDiagnostics, "function");
@@ -512,16 +514,16 @@ test("applyVisual：层与压暗层插到 body 最前，几何由注入样式表
 	buildApp();
 	const ctx = makeCtx({ ...I.DEFAULTS });
 	api.apply(ctx);
-	const layer = document.getElementById("dsh-dt-bg-layer");
-	const veil = document.getElementById("dsh-dt-bg-veil");
+	const layer = document.getElementById("dsh-web-bg-2-layer");
+	const veil = document.getElementById("dsh-web-bg-2-veil");
 	assert.ok(layer !== null, "壁纸层必须被创建");
 	assert.ok(veil !== null, "压暗层必须被创建");
 	assert.equal(document.body.children[0], layer, "壁纸层必须在 body 第一个（z-index:-2 之下）");
 	assert.equal(document.body.children[1], veil);
 	/* 固定铺满几何写在样式表里（比内联更抗 React 重渲染），内联只放随设置变化的值 */
 	const css = document.querySelector('style[data-plugin-css]').textContent;
-	assert.equal(css.includes("#dsh-dt-bg-layer{position:fixed;inset:0;z-index:-2"), true, "壁纸层几何必须在样式表里");
-	assert.equal(css.includes("#dsh-dt-bg-veil{position:fixed;inset:0;z-index:-1"), true, "压暗层几何必须在样式表里");
+	assert.equal(css.includes("#dsh-web-bg-2-layer{position:fixed;inset:0;z-index:-2"), true, "壁纸层几何必须在样式表里");
+	assert.equal(css.includes("#dsh-web-bg-2-veil{position:fixed;inset:0;z-index:-1"), true, "压暗层几何必须在样式表里");
 	assert.equal(layer.style.opacity, "1");
 	assert.equal(layer.style.backgroundImage.startsWith('url("data:image/svg+xml'), true);
 });
@@ -603,13 +605,13 @@ test("applyVisual：scope=off 或 enabled=false 时不留任何透明化标记",
 	assert.equal(document.documentElement.getAttribute("data-wbg2-canvas"), "1", "壁纸仍在，只是面板不透出");
 	api.apply(makeCtx({ ...I.DEFAULTS, enabled: false }));
 	assert.equal(document.documentElement.getAttribute("data-wbg2-canvas"), null, "关闭背景后画布必须恢复主题底色");
-	assert.equal(document.getElementById("dsh-dt-bg-layer").style.display, "none");
+	assert.equal(document.getElementById("dsh-web-bg-2-layer").style.display, "none");
 });
 
 test("applyVisual：纯色模式不设 backgroundImage，并写入 color", () => {
 	buildApp();
 	api.apply(makeCtx({ ...I.DEFAULTS, kind: "color", color: "#123456" }));
-	const layer = document.getElementById("dsh-dt-bg-layer");
+	const layer = document.getElementById("dsh-web-bg-2-layer");
 	assert.equal(layer.style.backgroundImage, "none");
 	assert.equal(layer.style.backgroundColor, "#123456");
 });
@@ -617,15 +619,15 @@ test("applyVisual：纯色模式不设 backgroundImage，并写入 color", () =>
 test("applyVisual：blur 落到壁纸层，压暗层按主题取色", () => {
 	buildApp();
 	api.apply(makeCtx({ ...I.DEFAULTS, blur: 12, dim: 0.4 }));
-	const layer = document.getElementById("dsh-dt-bg-layer");
-	const veil = document.getElementById("dsh-dt-bg-veil");
+	const layer = document.getElementById("dsh-web-bg-2-layer");
+	const veil = document.getElementById("dsh-web-bg-2-veil");
 	assert.equal(layer.style.filter, "blur(12px)");
 	assert.equal(veil.style.background, "rgba(15, 17, 21, 0.3)", "浅色主题：冷灰且更克制");
 	/* 切到深色主题：纯黑叠压暗值，且 blur=0 时不留 filter */
 	document.body.setAttribute("data-ds-dark-theme", "");
 	api.apply(makeCtx({ ...I.DEFAULTS, blur: 0, dim: 0.4 }));
-	assert.equal(document.getElementById("dsh-dt-bg-layer").style.filter, "none");
-	assert.equal(document.getElementById("dsh-dt-bg-veil").style.background, "rgba(0, 0, 0, 0.4)", "深色主题：纯黑叠压暗值");
+	assert.equal(document.getElementById("dsh-web-bg-2-layer").style.filter, "none");
+	assert.equal(document.getElementById("dsh-web-bg-2-veil").style.background, "rgba(0, 0, 0, 0.4)", "深色主题：纯黑叠压暗值");
 	document.body.removeAttribute("data-ds-dark-theme");
 });
 
@@ -672,7 +674,7 @@ test("诊断：collectDiagnostics 产出结构、令牌与已生效值", () => {
 	assert.equal(report.outerChain[0].id, "root");
 });
 
-test("宿主送回设置：插件读到默认值时采纳（含图片与视觉参数）", async () => {
+test("首次运行种子：image 为空时采纳宿主给的壁纸并写入设置", async () => {
 	buildApp();
 	const setCalls = [];
 	const snapshot = { value: { ...I.DEFAULTS }, writable: true };
@@ -687,18 +689,12 @@ test("宿主送回设置：插件读到默认值时采纳（含图片与视觉�
 		unset: () => {}
 	});
 	api.apply(ctx);
-	/* 宿主把整份设置随诊断响应送来；客户端在"读到的设置为默认"时采纳 */
-	const adopted = await I.adoptSeed({
-		image: "data:image/jpeg;base64,AAAA",
-		translucency: 0.6,
-		dim: 0.3,
-		scope: "all",
-		kind: "image"
-	});
-	assert.ok(adopted.includes("image"), "应写回 image");
-	assert.ok(adopted.includes("translucency"), "应写回 translucency");
+	/* 宿主送来的种子只补 image（这一版不接管其它设置：
+	   设置本身由 configForms 读、由诊断通道写） */
+	const adopted = await I.adoptSeed({ image: "data:image/jpeg;base64,AAAA" });
+	assert.deepEqual(adopted, ["image", "kind"]);
 	assert.equal(snapshot.value.image, "data:image/jpeg;base64,AAAA");
-	assert.equal(snapshot.value.translucency, 0.6);
+	assert.equal(snapshot.value.kind, "image");
 	/* 第二次调用必须被忽略（一次会话只补一次） */
 	assert.deepEqual(await I.adoptSeed({ image: "data:image/jpeg;base64,BBBB" }), []);
 });
@@ -843,6 +839,7 @@ for (const [name, fn] of cases) {
 	}
 }
 console.log(`\n${pass}/${cases.length} 项断言通过`);
+
 
 
 
