@@ -2,14 +2,18 @@
 #
 # 一个 insert 行即可 —— 插件本身没有需要改写的既有条目。
 #
-# ⚠️ `name` 必须是 **web-bg-2**，不能写成 npm 包名 `dsh-dt-bg`：
-#    它是插件的「配置命名空间」（见 lib/index.js 的 name 导出），
-#    也是用户设置条目的键。写成包名会导致 DSH 认为配置行没有对应实例，
-#    配置不再下发给插件 —— 插件退回出厂默认值（壁纸变内置兜底图）。
+# ⚠️ `name` 必须是**能被 Node 解析到的包名**（也就是本包名 `dsh-dt-bg`）。
+#    挂载行的 `name:` 会被 DSH 当作包名去解析：写成别的字符串（例如曾试过的
+#    `web-bg-2`）会解析失败，插件**根本不会加载** —— 真机提示"背景插件未启用"。
+#    实测（createRequire 从 profile 目录解析）：
+#      dsh-dt-bg → 成功；web-bg-2 / dsh-web-bg-2 → 失败
 #
-# 用户若想改配置，在自己的 profile cordis.patch.yml 里按 id 覆盖：
+# `id:` 则同时是**配置命名空间**：必须与 lib/index.js 的 name 导出、
+# 客户端 NAMESPACE、以及用户设置条目的 `- id:` 完全一致，否则配置不会下发给插件。
 #
-#   - id: web-bg-2
+# 用户若想改配置，在自己的 profile cordis.patch.yml 里按同一个 id 覆盖：
+#
+#   - id: dsh-dt-bg
 #     config:
 #       enabled: true
 #       kind: image

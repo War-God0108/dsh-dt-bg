@@ -27,10 +27,21 @@ const lastInsert = (() => {
 })();
 
 const deployedHost = join(DEPLOYED_DIR, "lib", "index.js");
+/** 从 yaml 文本里取"非注释行"的 `key: value`。注释行里也会出现 `name:` 字样，
+    早期直接用 /name:\s*(.+)/ 会匹到注释内容，得出错误结论。 */
+const yamlValue = (text, key) => {
+	for (const line of text.split("\n")) {
+		if (line.trimStart().startsWith("#")) continue;
+		const m = new RegExp(`^\\s*${key}:\\s*(.+?)\\s*$`).exec(line);
+		if (m !== null) return m[1].replace(/^["']|["']$/g, "");
+	}
+	return "(未找到)";
+};
+
 const rows = [
 	["lib/index.js 导出 name（命名空间）", pick(host, /const name = "([^"]+)"/)],
 	["lib/client.js NAMESPACE", pick(client, /const NAMESPACE = "([^"]+)"/)],
-	["包内 cordis.patch.yml 的 name", pick(pkgPatch, /name:\s*(.+)/).trim()],
+	["包内 cordis.patch.yml 的 name", yamlValue(pkgPatch, "name")],
 	["install.mjs PLUGIN_ID", pick(install, /const PLUGIN_ID = "([^"]+)"/)],
 	["install.mjs ENTRY_ID（挂载 id）", pick(install, /const ENTRY_ID = "([^"]+)"/)],
 	["已部署副本的导出 name", existsSync(deployedHost) ? pick(readFileSync(deployedHost, "utf8"), /const name = "([^"]+)"/) : "(未部署)"],
