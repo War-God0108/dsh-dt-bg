@@ -1,0 +1,23 @@
+# ---- 分发产物（由 tools/build-dist.mjs 生成，不入库）----
+dist/
+
+# ---- 诊断快照与截图 ----
+# snapshots/ 是本机回滚点（含 profile 配置与壁纸 data URL）
+# test/screenshots/ 是排查过程截图（曾累计 90MB+）
+snapshots/
+test/screenshots/
+
+# ---- 本机开发残留 ----
+*.bak-*
+lib/*.bak-*
+
+# ---- 依赖与运行时 ----
+node_modules/
+*.log
+
+# ---- 编辑器 / 系统 ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

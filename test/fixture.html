@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>dsh-web-bg-2 真实浏览器验证夹具</title>
+<!-- 官方令牌样式表（从 @deepseek-ai/dsh-client-ui-theme 提取，颜色唯一权威） -->
+<link rel="stylesheet" href="./theme-tokens.css" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; color: var(--dsw-alias-label-primary, #0f1115); background-color: var(--dsw-alias-bg-base); }
+
+  /* 模拟官方 Windows 外壳：40px 不透明标题栏遮罩，且引擎发布 --dsh-frame-top-clearance */
+  html { --dsh-frame-top-clearance: 40px; --dsh-frame-overlay-top: 60px; --dsh-frame-chrome-top: 40px; }
+  #shell-chrome { position: fixed; inset: 0 0 auto 0; height: 40px; z-index: 3000; display: flex; align-items: center; padding: 0 12px; gap: 8px; background: #f5f6f7; color: #0f1115; font-size: 12px; }
+  body[data-ds-dark-theme] #shell-chrome { background: #1b1b1c; color: #f9fafb; }
+
+  /* 模拟 DSH 布局根：铺满视口、用画布令牌画底 */
+  #frame { position: absolute; inset: 0; background-color: var(--dsw-alias-bg-base); padding-top: var(--dsh-frame-top-clearance); display: flex; }
+  /* 画布层：铺满但不悬浮 → 应被判为 skip */
+  #canvas-layer { position: absolute; inset: 0; background-color: var(--dsw-alias-bg-base); }
+  /* 侧边栏列：窄 + 高 → sidebar */
+  #sidebar { position: relative; z-index: 1; width: 264px; flex: none; background-color: var(--dsw-alias-bg-module-platform); padding: 12px 10px; display: flex; flex-direction: column; gap: 6px; }
+  /* 主列：铺不满整窗的普通面板 → panel */
+  #main { position: relative; z-index: 1; flex: 1; min-width: 0; background-color: var(--dsw-alias-bg-base); padding: 18px 22px; }
+  #content-title { font-size: 20px; margin: 4px 0 12px; }
+  #content-body { font-size: 14px; line-height: 1.7; }
+  /* 弹层：铺满 + fixed → 必须判为 overlay，不得被透明化 */
+  #modal-root { position: fixed; inset: 0; z-index: 2000; background: rgba(0, 0, 0, 0.4); }
+  .brand { font-weight: 600; font-size: 13px; }
+  .item { font-size: 13px; color: var(--dsw-alias-label-secondary, #61666b); padding: 6px 8px; }
+</style>
+</head>
+<body>
+  <div id="canvas-layer"></div>
+  <div id="shell-chrome"><span>☰</span><span>应用</span><span>编辑</span><span>DeepSeek Harness</span></div>
+  <div id="frame">
+    <div id="sidebar">
+      <div class="brand">deepseek HARNESS</div>
+      <div class="item">新会话</div>
+      <div class="item">插件</div>
+      <div class="item">工作区</div>
+      <div class="item">设置</div>
+    </div>
+    <div id="main">
+      <div id="content-title">真实浏览器验证</div>
+      <div id="content-body">这一页在 headless Chrome 里加载插件真实 bundle，用官方令牌样式表计算层叠与透明化。</div>
+    </div>
+  </div>
+  <div id="modal-root"></div>
+
+  <!-- 模拟 dsh-client-modules 的内联注册队列 + 模块装载器 -->
+  <script>
+    window.__DSH_BOOT__ = { entries: [], modules: {} };
+    window.__ModuleLoader__ = {
+      load(definition) {
+        window.__DSH_BOOT__.modules[definition.id] = definition;
+      }
+    };
+  </script>
+
+  <script type="module">
+    /* 配置诊断上报：夹具里没有人接这个路由，静默失败即可（插件里已 catch） */
+    window.fetch = async () => ({ ok: true, json: async () => ({ ok: true, value: { files: ["<fixture>"] } }) });
+
+    /* 桥接：bundle 用 window.__ModuleLoader__.load 注册，再显式求值工厂 */
+    const HOST_MODULES = {};
+    async function boot() {
+      await import("../lib/client.js?v=" + Date.now());
+      const definition = window.__DSH_BOOT__.modules["dsh-web-bg-2"];
+      if (!definition) throw new Error("bundle 没有注册 dsh-web-bg-2");
+      /* 只提供 bundle 真正 require 的两个模块；react 用最小桩件（夹具不渲染设置行） */
+      const require = (name) => {
+        if (name === "react") {
+          return {
+            createElement: (type, props, ...children) => ({ type, props, children }),
+            useState: (init) => [typeof init === "function" ? init() : init, () => {}],
+            useRef: (init) => ({ current: init ?? null }),
+            useEffect: () => {},
+            Fragment: "Fragment"
+          };
+        }
+        if (HOST_MODULES[name] !== undefined) return HOST_MODULES[name];
+        throw new Error("未预期的 require: " + name);
+      };
+      const api = definition.factory(require);
+
+      /* 假的 configForms / slots：给一个可控的设置快照 */
+      const settings = {
+        enabled: true, kind: "image", image: "", color: "#1e293b",
+        opacity: 1, dim: 0.18, blur: 0, translucency: 1, scope: "all"
+      };
+      window.__setSettings = (patch) => {
+        Object.assign(settings, patch);
+        api.__internals.applyVisual(settings);
+      };
+      const ctx = {
+        configForms: {
+          get: () => ({ getSnapshot: () => ({ value: settings, writable: true }), subscribe: () => () => {}, set: () => {}, unset: () => {} }),
+          whileServed: () => () => {}
+        },
+        slots: { inject: () => () => {}, register: () => () => {} },
+        remote: {},
+        effect: (fn) => { const d = typeof fn === "function" ? fn() : void 0; return typeof d === "function" ? d : () => {}; }
+      };
+      api.apply(ctx);
+      window.__wbg2 = api.__internals;
+      document.documentElement.setAttribute("data-fixture-ready", "1");
+      /* ?auto=1 时立刻跑断言并回传（真实浏览器计算值，不是夹具模拟值） */
+      const params = new URLSearchParams(location.search);
+      if (params.get("auto") === "1") {
+        setTimeout(() => void runAssertions(Number(params.get("report") ?? 0)), 900);
+      }
+    }
+
+    /** 真实浏览器里的断言：层叠、透明化、overlay 排除、关闭后还原。 */
+    async function runAssertions(reportPort) {
+      const api = window.__wbg2;
+      const results = [];
+      const check = (name, ok, detail) => results.push({ name, ok: Boolean(ok), detail: detail === void 0 ? "" : String(detail) });
+      const layer = document.getElementById("dsh-web-bg-2-layer");
+      const veil = document.getElementById("dsh-web-bg-2-veil");
+      const frame = document.getElementById("frame");
+      const sidebar = document.getElementById("sidebar");
+      const main = document.getElementById("main");
+      const canvas = document.getElementById("canvas-layer");
+      const modal = document.getElementById("modal-root");
+      const px = (color) => {
+        const m = /rgba?\(([^)]+)\)/.exec(color);
+        return m === null ? null : m[1].split(/[\s,/]+/).filter((x) => x !== "").map(Number);
+      };
+
+      check("壁纸层存在", layer !== null);
+      check("压暗层存在", veil !== null);
+      check("层插在 body 最前（z-index 负层之下无遮挡）", document.body.children[0] === layer && document.body.children[1] === veil,
+        [...document.body.children].map((c) => c.id || c.tagName).join(","));
+
+      const layerCs = layer === null ? null : getComputedStyle(layer);
+      check("壁纸层是 fixed 全屏", layerCs !== null && layerCs.position === "fixed" && layerCs.top === "0px" && layerCs.height === window.innerHeight + "px",
+        layerCs === null ? "no layer" : `${layerCs.position} ${layerCs.top} ${layerCs.height}`);
+      check("壁纸层不可点（pointer-events:none）", layerCs !== null && layerCs.pointerEvents === "none", layerCs && layerCs.pointerEvents);
+      check("壁纸内容已设置", layer !== null && layer.style.backgroundImage.includes("data:image/svg+xml"), layer && layer.style.backgroundImage.slice(0, 40));
+
+      /* 关键：面板与画布的底色必须变透明/半透明，壁纸才看得到 */
+      const sidebarAlpha = px(getComputedStyle(sidebar).backgroundColor);
+      const mainAlpha = px(getComputedStyle(main).backgroundColor);
+      const canvasAlpha = px(getComputedStyle(canvas).backgroundColor);
+      const bodyAlpha = px(getComputedStyle(document.body).backgroundColor);
+      check("侧边栏底色已半透明", sidebarAlpha !== null && sidebarAlpha[3] > 0 && sidebarAlpha[3] < 1, JSON.stringify(sidebarAlpha));
+      check("主列底色已半透明", mainAlpha !== null && mainAlpha[3] > 0 && mainAlpha[3] < 1, JSON.stringify(mainAlpha));
+      check("画布层已让位（透明）", canvasAlpha !== null && canvasAlpha[3] === 0, JSON.stringify(canvasAlpha));
+      check("body 画布已让位（透明）", bodyAlpha !== null && bodyAlpha[3] === 0, JSON.stringify(bodyAlpha));
+
+      /* 面板识别结果 */
+      check("画布层判为 skip", canvas.dataset.wbg2 === "skip", canvas.dataset.wbg2);
+      check("侧边栏判为 sidebar", sidebar.dataset.wbg2 === "sidebar", sidebar.dataset.wbg2);
+      check("主列判为 panel", main.dataset.wbg2 === "panel", main.dataset.wbg2);
+      check("弹层判为 overlay（不透明化）", modal.dataset.wbg2 === "overlay", modal.dataset.wbg2);
+      const modalAlpha = px(getComputedStyle(modal).backgroundColor);
+      check("弹层遮罩仍是半透明黑（未被洗掉）", modalAlpha !== null && modalAlpha[0] === 0 && modalAlpha[3] > 0.3, JSON.stringify(modalAlpha));
+
+      /* 视觉命中点：面板中心点点到的应是应用内容，不是壁纸层 */
+      const hit = document.elementFromPoint(Math.round(window.innerWidth / 2), Math.round(window.innerHeight / 2));
+      check("面板中心命中应用内容（壁纸层没挡住交互）",
+        hit !== null && hit.id !== "dsh-web-bg-2-layer" && hit.id !== "dsh-web-bg-2-veil",
+        hit === null ? "null" : (hit.id || hit.tagName));
+
+      /* 关闭背景后必须完全还原 */
+      window.__setSettings({ enabled: false });
+      const offSidebar = px(getComputedStyle(sidebar).backgroundColor);
+      const offBody = px(getComputedStyle(document.body).backgroundColor);
+      check("关闭后侧边栏恢复不透明", offSidebar !== null && offSidebar[3] === 1, JSON.stringify(offSidebar));
+      check("关闭后 body 画布恢复", offBody !== null && offBody[3] === 1, JSON.stringify(offBody));
+      check("关闭后 canvas 标记被移除", document.documentElement.getAttribute("data-wbg2-canvas") === null);
+      check("关闭后壁纸层隐藏", layer.style.display === "none", layer.style.display);
+
+      /* 再开回来，确认可反复切换 */
+      window.__setSettings({ enabled: true });
+      check("重新开启后 canvas 标记回来", document.documentElement.getAttribute("data-wbg2-canvas") === "1");
+
+      const passed = results.filter((r) => r.ok).length;
+      const payload = { total: results.length, passed, results };
+      if (reportPort > 0) {
+        try { await fetch(`http://127.0.0.1:${reportPort}/report`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) }); }
+        catch { /* 回传失败不影响页面 */ }
+      }
+      document.documentElement.setAttribute("data-fixture-result", `${passed}/${results.length}`);
+    }
+    window.__runFixtureAssertions = () => runAssertions(0);
+    boot().catch((error) => {
+      document.documentElement.setAttribute("data-fixture-error", String(error && error.message ? error.message : error));
+    });
+  </script>
+</body>
+</html>

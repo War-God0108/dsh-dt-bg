@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>开关形状对比（我的 vs 官方规格）</title>
+<style>
+	body {
+		margin: 0;
+		padding: 24px;
+		background: #1b1b1c;
+		color: #cfd3d6;
+		font: 13px/1.6 system-ui, sans-serif;
+	}
+	h2 { font-size: 13px; font-weight: 500; margin: 18px 0 6px; color: #9aa0a6; }
+	.row { display: flex; align-items: center; gap: 16px; }
+	.big { zoom: 4; }          /* 放大 4 倍便于看形状 */
+	.note { color: #7d838a; font-size: 12px; }
+
+	/* ==== 我的开关（从 lib/client.js 抽出的规则，逐条照抄） ==== */
+	button.wbg2-switch {
+		box-sizing: border-box !important;
+		display: inline-flex !important;
+		flex: none !important;
+		align-items: center !important;
+		width: 36px !important;
+		min-width: 36px !important;
+		max-width: 36px !important;
+		height: 20px !important;
+		min-height: 20px !important;
+		max-height: 20px !important;
+		padding: 2px !important;
+		margin: 0 !important;
+		border: 0 !important;
+		border-radius: 999px !important;
+		background: #35363a !important;
+		cursor: pointer !important;
+		overflow: hidden !important;
+		transition: background .15s ease !important;
+	}
+	button.wbg2-switch > .wbg2-thumb {
+		box-sizing: border-box !important;
+		display: block !important;
+		flex: none !important;
+		width: 16px !important;
+		height: 16px !important;
+		border-radius: 999px !important;
+		background: #f9fafb !important;
+		transform: translateX(0) !important;
+		transition: transform .15s ease, background .15s ease !important;
+	}
+	button.wbg2-switch[aria-checked="true"] { background: rgb(249, 250, 251) !important; }
+	button.wbg2-switch[aria-checked="true"] > .wbg2-thumb {
+		transform: translateX(16px) !important;
+		background: rgb(15, 17, 21) !important;
+	}
+
+	/* ==== 官方规格复刻（依据真机量到的计算样式：36x20 / radius 999px / padding 2px / 白轨道） ==== */
+	.ofc-switch {
+		box-sizing: border-box;
+		display: inline-flex;
+		align-items: center;
+		width: 36px;
+		height: 20px;
+		padding: 2px;
+		border: 0;
+		border-radius: 999px;
+		background: rgb(249, 250, 251);
+		cursor: pointer;
+		overflow: visible;
+	}
+	.ofc-switch .ofc-thumb {
+		display: block;
+		width: 16px;
+		height: 16px;
+		border-radius: 50%;
+		background: rgb(15, 17, 21);
+		transform: translateX(16px);
+	}
+</style>
+</head>
+<body>
+	<h2>我的开关（开）— 4× 放大</h2>
+	<div class="row big">
+		<button class="wbg2-switch" role="switch" aria-checked="true"><span class="wbg2-thumb"></span></button>
+	</div>
+	<h2>我的开关（关）— 4× 放大</h2>
+	<div class="row big">
+		<button class="wbg2-switch" role="switch" aria-checked="false"><span class="wbg2-thumb"></span></button>
+	</div>
+
+	<h2>官方规格复刻（开）— 4× 放大</h2>
+	<div class="row big">
+		<button class="ofc-switch" role="switch" aria-checked="true"><span class="ofc-thumb"></span></button>
+	</div>
+
+	<h2>1:1 原尺寸对照（左=我的关、中=我的开、右=官方规格开）</h2>
+	<div class="row">
+		<button class="wbg2-switch" role="switch" aria-checked="false"><span class="wbg2-thumb"></span></button>
+		<button class="wbg2-switch" role="switch" aria-checked="true"><span class="wbg2-thumb"></span></button>
+		<button class="ofc-switch" role="switch" aria-checked="true"><span class="ofc-thumb"></span></button>
+	</div>
+	<p class="note">若"放大"行里左右两端是半圆（不是直角），说明这组 CSS 渲染出来就是胶囊形。</p>
+</body>
+</html>
